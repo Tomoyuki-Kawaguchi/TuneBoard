@@ -1,0 +1,22 @@
+{
+  "folders": [
+    {
+      "name": "backend",
+      "path": "backend",
+    },
+    {
+      "name": "plan",
+      "path": "plan",
+    },
+    {
+      "name": "frontend",
+      "path": "frontend",
+    },
+  ],
+  "settings": {
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.import.gradle.enabled": true,
+    "java.import.gradle.wrapper.enabled": true,
+    "java.debug.settings.onBuildFailureProceed": true,
+  },
+}
