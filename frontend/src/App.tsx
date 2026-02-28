@@ -12,10 +12,10 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const checkHealth = useCallback(() => {
+  const checkHealth = useCallback((path: string) => {
     setLoading(true);
     apiClient
-      .get<HealthStatus>('/health')
+      .get<HealthStatus>(path)
       .then((data) => {
         setHealth(data);
         setError(null);
@@ -82,12 +82,20 @@ function App() {
         </div>
 
         {/* Retry button */}
-        <button
-          onClick={checkHealth}
-          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
-        >
-          Re-check
-        </button>
+        <div className="space-x-2">
+          <button
+            onClick={() => checkHealth('/health')}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+          >
+            Re-check
+          </button>
+                  <button
+            onClick={() => checkHealth('/health/error')}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+          >
+            Re-check-error
+          </button>
+        </div>
       </div>
     </div>
   );

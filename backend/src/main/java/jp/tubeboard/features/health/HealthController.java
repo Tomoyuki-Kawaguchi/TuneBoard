@@ -19,4 +19,10 @@ public class HealthController {
                 "timestamp", LocalDateTime.now().toString(),
                 "application", "TuneBoard"));
     }
+
+    @GetMapping("/health/error")
+    public ResponseEntity<Map<String, Object>> healthError() {
+        throw new RuntimeException("Simulated error for testing");
+    }
+
 }
