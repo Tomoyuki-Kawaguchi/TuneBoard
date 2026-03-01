@@ -8,13 +8,14 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 async function request<T>(
   path: string,
   options: RequestInit = {},
-): Promise<T> {
+): Promise<T|void> {
   const url = `${API_BASE_URL}${path}`;
 
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
+  const headers = new Headers(options.headers);
+
+  if(!headers.has('Content-Type') && options.body && typeof options.body === 'string') {
+    headers.set('Content-Type', 'application/json');
+  }
 
   // const token = getToken();
   // if (token) (headers as Record<string,string>)['Authorization'] = `Bearer ${token}`;
@@ -33,7 +34,7 @@ async function request<T>(
 
   // 204 No Content
   if (response.status === 204) {
-    return undefined as T;
+    return;
   }
 
   return response.json();
@@ -43,25 +44,25 @@ async function request<T>(
 // Public API client
 // ──────────────────────────────────────
 export const apiClient = {
-  get<T>(path: string): Promise<T> {
-    return request<T>(path, { method: 'GET' });
+  get<T>(path: string): Promise<T|void> {
+    return request<T|void>(path, { method: 'GET' });
   },
 
-  post<T>(path: string, body?: unknown): Promise<T> {
-    return request<T>(path, {
+  post<T>(path: string, body?: unknown): Promise<T|void> {
+    return request<T|void>(path, {
       method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
     });
   },
 
-  put<T>(path: string, body?: unknown): Promise<T> {
-    return request<T>(path, {
+  put<T>(path: string, body?: unknown): Promise<T|void> {
+    return request<T|void>(path, {
       method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
     });
   },
 
-  delete<T>(path: string): Promise<T> {
-    return request<T>(path, { method: 'DELETE' });
+  delete<T>(path: string): Promise<T|void> {
+    return request<T|void>(path, { method: 'DELETE' });
   },
 };

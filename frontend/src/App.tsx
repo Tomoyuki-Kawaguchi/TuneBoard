@@ -17,7 +17,11 @@ function App() {
     apiClient
       .get<HealthStatus>(path)
       .then((data) => {
-        setHealth(data);
+        if (data && typeof data === 'object') {
+          setHealth(data);
+        } else {
+          setHealth(null);
+        }
         setError(null);
       })
       .catch((err: Error) => {
