@@ -1,4 +1,4 @@
-import { apiClient, setAccessToken, clearAccessToken } from '@/lib/api/client';
+import { apiClient, clearAccessToken } from '@/lib/api/client';
 import { useState, useEffect, useCallback } from 'react';
 
 export interface AuthMe {
@@ -30,30 +30,20 @@ export const useAuth = () => {
     const exchangeTokenAfterLogin = useCallback(() => {
       const params = new URLSearchParams(window.location.search);
       const login = params.get('login');
-      const hash = window.location.hash.startsWith('#')
-        ? window.location.hash.substring(1)
-        : window.location.hash;
-      const hashParams = new URLSearchParams(hash);
-      const token = hashParams.get('token');
 
       if (login !== 'success') {
         return;
       }
 
-      if (token) {
-        setAccessToken(token);
-      }
       checkAuth();
 
       const url = new URL(window.location.href);
       url.searchParams.delete('login');
-      url.hash = '';
       window.history.replaceState({}, '', url.toString());
     }, [checkAuth]);
     
     useEffect(() => {
       exchangeTokenAfterLogin();
-      checkAuth();
     }, [checkAuth, exchangeTokenAfterLogin]);
     
     const loginWithGoogle = useCallback(() => {

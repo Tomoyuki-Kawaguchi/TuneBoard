@@ -16,6 +16,19 @@ export function clearAccessToken(): void {
   inMemoryAccessToken = null;
 }
 
+function resolveDefaultCredentials(apiBaseUrl: string): RequestCredentials {
+  if (apiBaseUrl.startsWith('/')) {
+    return 'same-origin';
+  }
+
+  try {
+    const apiOrigin = new URL(apiBaseUrl, window.location.origin).origin;
+    return apiOrigin === window.location.origin ? 'same-origin' : 'omit';
+  } catch {
+    return 'same-origin';
+  }
+}
+
 // ──────────────────────────────────────
 // Core
 // ──────────────────────────────────────
@@ -36,7 +49,7 @@ async function request<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const credentials = options.credentials ?? 'include';
+  const credentials = options.credentials ?? resolveDefaultCredentials(API_BASE_URL);
 
   const response = await fetch(url, {
     ...options,
