@@ -51,6 +51,31 @@ public class JwtTokenService {
                 .getPayload();
     }
 
+    public String generateOAuthState(String frontendRedirectUrl) {
+        Instant now = Instant.now();
+        Instant expiresAt = now.plusSeconds(300);
+
+        return Jwts.builder()
+                .subject("oauth_state")
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiresAt))
+                .claims(Map.of(
+                        "type", "oauth_state",
+                        "redirect", frontendRedirectUrl == null ? "" : frontendRedirectUrl))
+                .signWith(secretKey)
+                .compact();
+    }
+
+    public String extractFrontendRedirectFromState(String stateToken) {
+        Claims claims = parseClaims(stateToken);
+        String type = claims.get("type", String.class);
+        if (!"oauth_state".equals(type)) {
+            throw new IllegalArgumentException("Invalid oauth state token");
+        }
+        String redirect = claims.get("redirect", String.class);
+        return redirect == null ? "" : redirect;
+    }
+
     public long getExpirationSeconds() {
         return expirationMillis / 1000;
     }

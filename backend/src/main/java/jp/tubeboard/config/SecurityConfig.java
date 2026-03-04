@@ -24,32 +24,23 @@ public class SecurityConfig {
                 this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         }
 
-        @Value("${app.frontend-base-url:http://localhost:5173}")
-        private String frontendBaseUrl;
-
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
                                 .csrf(AbstractHttpConfigurer::disable)
                                 .cors(Customizer.withDefaults())
                                 .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                                 .requestMatchers("/api/health").permitAll()
                                                 .requestMatchers("/api/health/error").permitAll()
                                                 .requestMatchers("/api/auth/me").permitAll()
-                                                .requestMatchers(HttpMethod.POST, "/api/auth/token").permitAll()
-                                                .requestMatchers("/oauth2/**", "/login/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/auth/google/login").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/auth/google/callback")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
                                                 .anyRequest().authenticated())
-                                .oauth2Login(oauth2 -> oauth2
-                                                .defaultSuccessUrl(frontendBaseUrl + "/?login=success", true)
-                                                .failureUrl(frontendBaseUrl + "/?login=error"))
-                                .logout(logout -> logout
-                                                .logoutUrl("/api/auth/logout")
-                                                .logoutSuccessUrl(frontendBaseUrl + "/?logout=success")
-                                                .invalidateHttpSession(true)
-                                                .deleteCookies("JSESSIONID"))
                                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                                 .headers(headers -> headers.frameOptions(frame -> frame.disable()));
 

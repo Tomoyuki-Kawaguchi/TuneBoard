@@ -14,13 +14,6 @@ interface AuthMe {
   picture?: string;
 }
 
-interface AuthTokenResponse {
-  authenticated: boolean;
-  tokenType?: string;
-  accessToken?: string;
-  expiresIn?: number;
-}
-
 function App() {
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,26 +56,24 @@ function App() {
 
   const exchangeTokenAfterLogin = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('login') !== 'success') {
+    const login = params.get('login');
+    const hash = window.location.hash.startsWith('#')
+      ? window.location.hash.substring(1)
+      : window.location.hash;
+    const hashParams = new URLSearchParams(hash);
+    const token = hashParams.get('token');
+
+    if (login !== 'success' || !token) {
       return;
     }
 
-    apiClient
-      .post<AuthTokenResponse>('/auth/token')
-      .then((data) => {
-        if (data && typeof data === 'object' && 'accessToken' in data && data.accessToken) {
-          setAccessToken(data.accessToken);
-          checkAuth();
-        }
-      })
-      .catch(() => {
-        clearAccessToken();
-      })
-      .finally(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('login');
-        window.history.replaceState({}, '', url.toString());
-      });
+    setAccessToken(token);
+    checkAuth();
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete('login');
+    url.hash = '';
+    window.history.replaceState({}, '', url.toString());
   }, [checkAuth]);
 
   useEffect(() => {
@@ -92,17 +83,17 @@ function App() {
     checkAuth();
   }, [checkAuth, checkHealth, exchangeTokenAfterLogin]);
 
-  const loginWithGoogle = () => {
-    window.location.href = '/oauth2/authorization/google';
-  };
+  const loginWithGoogle = useCallback(() => {
+    const loginUrl = `/api/auth/google/login?redirect=${encodeURIComponent(window.location.origin)}`;
+    window.location.href = loginUrl;
+  }, []);
 
   const logout = useCallback (() => {
     clearAccessToken();
-    apiClient.post('/auth/logout')
-      .finally(() => {
-        setAuthMe(null);
-        checkAuth();
-      });
+    apiClient.post('/auth/logout').finally(() => {
+      setAuthMe(null);
+      checkAuth();
+    });
   }, [checkAuth]);
 
   return (

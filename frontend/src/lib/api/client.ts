@@ -1,18 +1,19 @@
 import { type ApiError, ApiClientError } from './type';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
-const ACCESS_TOKEN_KEY = 'tb_access_token';
+
+let inMemoryAccessToken: string | null = null;
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return inMemoryAccessToken;
 }
 
 export function setAccessToken(token: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  inMemoryAccessToken = token;
 }
 
 export function clearAccessToken(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  inMemoryAccessToken = null;
 }
 
 // ──────────────────────────────────────
@@ -35,7 +36,7 @@ async function request<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const credentials = token ? 'omit' : options.credentials ?? 'include';
+  const credentials = options.credentials ?? 'omit';
 
   const response = await fetch(url, {
     ...options,
@@ -65,25 +66,27 @@ async function request<T>(
 // Public API client
 // ──────────────────────────────────────
 export const apiClient = {
-  get<T>(path: string): Promise<T|void> {
-    return request<T|void>(path, { method: 'GET' });
+  get<T>(path: string, options: RequestInit = {}): Promise<T|void> {
+    return request<T|void>(path, { ...options, method: 'GET' });
   },
 
-  post<T>(path: string, body?: unknown): Promise<T|void> {
+  post<T>(path: string, body?: unknown, options: RequestInit = {}): Promise<T|void> {
     return request<T|void>(path, {
+      ...options,
       method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
     });
   },
 
-  put<T>(path: string, body?: unknown): Promise<T|void> {
+  put<T>(path: string, body?: unknown, options: RequestInit = {}): Promise<T|void> {
     return request<T|void>(path, {
+      ...options,
       method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
     });
   },
 
-  delete<T>(path: string): Promise<T|void> {
-    return request<T|void>(path, { method: 'DELETE' });
+  delete<T>(path: string, options: RequestInit = {}): Promise<T|void> {
+    return request<T|void>(path, { ...options, method: 'DELETE' });
   },
 };
