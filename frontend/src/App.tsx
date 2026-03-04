@@ -98,7 +98,7 @@ function App() {
 
   const logout = useCallback (() => {
     clearAccessToken();
-    apiClient.post('logout')
+    apiClient.post('/auth/logout')
       .finally(() => {
         setAuthMe(null);
         checkAuth();

@@ -46,7 +46,7 @@ public class SecurityConfig {
                                                 .defaultSuccessUrl(frontendBaseUrl + "/?login=success", true)
                                                 .failureUrl(frontendBaseUrl + "/?login=error"))
                                 .logout(logout -> logout
-                                                .logoutUrl("/logout")
+                                                .logoutUrl("/api/auth/logout")
                                                 .logoutSuccessUrl(frontendBaseUrl + "/?logout=success")
                                                 .invalidateHttpSession(true)
                                                 .deleteCookies("JSESSIONID"))
