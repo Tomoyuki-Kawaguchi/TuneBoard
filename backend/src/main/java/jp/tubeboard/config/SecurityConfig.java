@@ -13,31 +13,30 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${app.frontend-base-url:http://localhost:5173}")
-    private String frontendBaseUrl;
+        @Value("${app.frontend-base-url:http://localhost:5173}")
+        private String frontendBaseUrl;
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/health").permitAll()
-                        .requestMatchers("/api/health/error").permitAll()
-                        .requestMatchers("/oauth2/**", "/login/**").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/api/auth/me").authenticated()
-                        .anyRequest().permitAll())
-                .oauth2Login(oauth2 -> oauth2
-                        .defaultSuccessUrl(frontendBaseUrl + "/?login=success", true)
-                        .failureUrl(frontendBaseUrl + "/?login=error"))
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl(frontendBaseUrl + "/?logout=success")
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID"))
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()));
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(AbstractHttpConfigurer::disable)
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/api/health").permitAll()
+                                                .requestMatchers("/api/health/error").permitAll()
+                                                .requestMatchers("/oauth2/**", "/login/**").permitAll()
+                                                .anyRequest().authenticated())
+                                .oauth2Login(oauth2 -> oauth2
+                                                .defaultSuccessUrl(frontendBaseUrl + "/?login=success", true)
+                                                .failureUrl(frontendBaseUrl + "/?login=error"))
+                                .logout(logout -> logout
+                                                .logoutUrl("/logout")
+                                                .logoutSuccessUrl(frontendBaseUrl + "/?logout=success")
+                                                .invalidateHttpSession(true)
+                                                .deleteCookies("JSESSIONID"))
+                                .headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
-        return http.build();
-    }
+                return http.build();
+        }
 }
