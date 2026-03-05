@@ -6,6 +6,8 @@ import { LogOut } from 'lucide-react';
 export const Layout = () => {
     const { authMe, logout, isAuthLoading } = useAuthContext();
 
+    const name = authMe?.name || authMe?.email || 'User';
+
     return (
         <div className="min-h-screen bg-background">
             <header className="border-b bg-card">
@@ -18,8 +20,10 @@ export const Layout = () => {
                             <span className="text-muted-foreground">認証確認中...</span>
                         ) : authMe?.authenticated ? (
                             <>
-                                <img src={authMe.picture} alt="Avatar" aria-label="Avatar" className="size-8 rounded-full" />
-                                <span className="text-muted-foreground">{authMe.name || authMe.email || 'User'}</span>
+                                {authMe.picture ? (
+                                    <img src={authMe.picture} alt="Avatar" aria-label="Avatar" className="size-8 rounded-full" />
+                                ) : <span className="size-8 rounded-full bg-muted flex items-center justify-center text-xs text-white">{name.charAt(0)}</span>}
+                                <span className="text-muted-foreground">{name}</span>
                                 <Button onClick={logout} variant="outline" size="sm">                                    
                                     <LogOut/>
                                     Logout
@@ -29,7 +33,7 @@ export const Layout = () => {
                     </div>
                 </div>
             </header>
-            <main className="mx-auto max-w-5xl p-4">
+            <main className="mx-auto max-full p-4">
                 <Outlet />
             </main>
         </div>
