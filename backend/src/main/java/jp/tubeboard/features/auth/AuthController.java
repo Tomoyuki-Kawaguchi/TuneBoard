@@ -20,6 +20,7 @@ public class AuthController {
 
     private final JwtTokenService jwtTokenService;
     private final GoogleOAuthService googleOAuthService;
+    private final UserService userService;
 
     @Value("${app.frontend-base-url:http://localhost:5173}")
     private String frontendBaseUrl;
@@ -27,9 +28,11 @@ public class AuthController {
     @Value("${app.auth.cookie-secure:false}")
     private boolean authCookieSecure;
 
-    public AuthController(JwtTokenService jwtTokenService, GoogleOAuthService googleOAuthService) {
+    public AuthController(JwtTokenService jwtTokenService, GoogleOAuthService googleOAuthService,
+            UserService userService) {
         this.jwtTokenService = jwtTokenService;
         this.googleOAuthService = googleOAuthService;
+        this.userService = userService;
     }
 
     @GetMapping("/google/login")
@@ -69,7 +72,17 @@ public class AuthController {
         String email = toStringOrEmpty(userInfo.get("email"));
         String name = toStringOrEmpty(userInfo.get("name"));
         String picture = toStringOrEmpty(userInfo.get("picture"));
-        String token = jwtTokenService.generateToken(name, email, picture);
+        String sub = toStringOrEmpty(userInfo.get("sub"));
+
+        try {
+            userService.saveOrUpdateFromGoogleUserInfo(userInfo);
+        } catch (Exception ex) {
+            return ResponseEntity.status(302)
+                    .location(URI.create(frontendRedirect + "?login=error"))
+                    .build();
+        }
+
+        String token = jwtTokenService.generateToken(sub, name, email, picture);
 
         ResponseCookie tokenCookie = ResponseCookie.from("auth_token", token)
                 .httpOnly(true)
@@ -94,23 +107,24 @@ public class AuthController {
                     "authenticated", false));
         }
 
-        String email = "";
-        String name = "";
-        String picture = "";
+        if (!(principal instanceof Map<?, ?>)) {
+            return ResponseEntity.status(401).body(Map.of("authenticated", false));
+        }
 
-        if (principal instanceof Map<?, ?> claims) {
-            email = toStringOrEmpty(claims.get("email"));
-            name = toStringOrEmpty(claims.get("name"));
-            picture = toStringOrEmpty(claims.get("picture"));
-        } else {
+        User user;
+        try {
+            user = userService.getCurrentUser();
+        } catch (Exception ex) {
             return ResponseEntity.status(401).body(Map.of("authenticated", false));
         }
 
         return ResponseEntity.ok(Map.of(
                 "authenticated", true,
-                "name", name,
-                "email", email,
-                "picture", picture));
+                "id", user.getId(),
+                "sub", user.getSub(),
+                "name", user.getName(),
+                "email", user.getEmail(),
+                "picture", toStringOrEmpty(user.getPicture())));
     }
 
     @PostMapping("/logout")

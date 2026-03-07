@@ -40,6 +40,9 @@ async function request<T>(
 
   const headers = new Headers(options.headers);
 
+  console.log("Request URL:", url);
+  console.log("Request Options:", options);
+
   if(!headers.has('Content-Type') && options.body && typeof options.body === 'string') {
     headers.set('Content-Type', 'application/json');
   }
@@ -57,22 +60,29 @@ async function request<T>(
     credentials,
   });
 
+  const responseText = await response.text();
+
   if (!response.ok) {
     let apiError: ApiError | undefined;
     try {
-      apiError = await response.json();
+      apiError = responseText ? JSON.parse(responseText) : undefined;
     } catch {
       throw new ApiClientError(response.status);
     }
     throw new ApiClientError(response.status, apiError);
   }
 
-  // 204 No Content
-  if (response.status === 204) {
+  // 204 No Content or empty body
+  if (response.status === 204 || !responseText) {
     return;
   }
 
-  return response.json();
+  try {
+    return JSON.parse(responseText) as T;
+  } catch {
+    // If parsing fails, throw a clearer error
+    throw new ApiClientError(response.status);
+  }
 }
 
 // ──────────────────────────────────────

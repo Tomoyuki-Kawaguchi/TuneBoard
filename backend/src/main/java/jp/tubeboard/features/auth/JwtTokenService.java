@@ -27,7 +27,7 @@ public class JwtTokenService {
         this.expirationMillis = expirationMillis;
     }
 
-    public String generateToken(String name, String email, String picture) {
+    public String generateToken(String sub, String name, String email, String picture) {
         Instant now = Instant.now();
         Instant expiresAt = now.plusMillis(expirationMillis);
 
@@ -36,6 +36,7 @@ public class JwtTokenService {
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiresAt))
                 .claims(Map.of(
+                        "sub", sub == null ? "" : sub,
                         "name", name == null ? "" : name,
                         "email", email == null ? "" : email,
                         "picture", picture == null ? "" : picture))

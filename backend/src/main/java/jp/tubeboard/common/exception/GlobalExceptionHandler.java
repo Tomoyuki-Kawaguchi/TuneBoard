@@ -2,6 +2,9 @@ package jp.tubeboard.common.exception;
 
 import jp.tubeboard.common.dto.ApiErrorResponse;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -20,11 +23,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
-        String message = ex.getBindingResult().getFieldErrors().stream()
-                .map(e -> e.getField() + ": " + e.getDefaultMessage())
-                .reduce((a, b) -> a + "; " + b)
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        ex.getBindingResult().getFieldErrors()
+                .forEach(error -> fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage()));
+
+        String message = fieldErrors.values().stream()
+                .findFirst()
                 .orElse("Validation failed");
-        return buildResponse(HttpStatus.BAD_REQUEST, message);
+
+        return buildResponse(HttpStatus.BAD_REQUEST, message, fieldErrors);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -38,10 +45,16 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<ApiErrorResponse> buildResponse(HttpStatus status, String message) {
+        return buildResponse(status, message, null);
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildResponse(HttpStatus status, String message,
+            Map<String, String> fieldErrors) {
         ApiErrorResponse body = ApiErrorResponse.builder()
                 .status(status.value())
                 .error(status.getReasonPhrase())
                 .message(message)
+                .fieldErrors(fieldErrors)
                 .build();
         return ResponseEntity.status(status).body(body);
     }
