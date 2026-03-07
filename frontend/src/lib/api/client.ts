@@ -57,22 +57,29 @@ async function request<T>(
     credentials,
   });
 
+  const responseText = await response.text();
+
   if (!response.ok) {
     let apiError: ApiError | undefined;
     try {
-      apiError = await response.json();
+      apiError = responseText ? JSON.parse(responseText) : undefined;
     } catch {
       throw new ApiClientError(response.status);
     }
     throw new ApiClientError(response.status, apiError);
   }
 
-  // 204 No Content
-  if (response.status === 204) {
+  // 204 No Content or empty body
+  if (response.status === 204 || !responseText) {
     return;
   }
 
-  return response.json();
+  try {
+    return JSON.parse(responseText) as T;
+  } catch {
+    // If parsing fails, throw a clearer error
+    throw new ApiClientError(response.status);
+  }
 }
 
 // ──────────────────────────────────────

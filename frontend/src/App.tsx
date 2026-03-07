@@ -3,7 +3,7 @@ import { AuthProvider } from '@/features/auth/AuthProvider';
 import { Layout } from '@/features/layout/Layout';
 import { Login } from '@/pages/Login';
 import { RequireAuth } from '@/features/auth/RequireAuth';
-import { Home } from './pages/Home';
+import { TenantsPage } from './features/tenants/TenantsPage';
 
 function App() {
   return (
@@ -19,7 +19,7 @@ function App() {
               </RequireAuth>
             }
           >
-            <Route index element={<Home />} />
+            <Route path="/tenants" element={<TenantsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

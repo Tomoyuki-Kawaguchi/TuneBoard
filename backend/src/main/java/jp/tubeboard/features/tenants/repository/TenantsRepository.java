@@ -10,7 +10,7 @@ import jp.tubeboard.features.tenants.model.Tenants;
 
 @Repository
 public interface TenantsRepository extends JpaRepository<Tenants, UUID> {
-    public List<Tenants> findAllDeletedAtIsNull();
+    public List<Tenants> findAllByUserIdAndDeletedAtIsNull(Long userId);
 
-    public Optional<Tenants> findByIdDeletedAtIsNull(UUID id);
+    public Optional<Tenants> findByIdAndUserIdAndDeletedAtIsNull(UUID id, Long userId);
 }
