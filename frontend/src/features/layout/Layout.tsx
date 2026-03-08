@@ -33,7 +33,7 @@ export const Layout = () => {
                     </div>
                 </div>
             </header>
-            <main className="mx-auto max-w-full p-4">
+            <main className="mx-auto max-w-4xl p-4">
                 <Outlet />
             </main>
         </div>

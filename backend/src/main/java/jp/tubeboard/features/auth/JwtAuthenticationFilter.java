@@ -35,6 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 Claims claims = jwtTokenService.parseClaims(token);
                 Map<String, Object> principal = Map.of(
+                        "sub", claims.get("sub", String.class) == null ? "" : claims.get("sub", String.class),
                         "name", claims.get("name", String.class) == null ? "" : claims.get("name", String.class),
                         "email", claims.get("email", String.class) == null ? "" : claims.get("email", String.class),
                         "picture",
