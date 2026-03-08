@@ -1,17 +1,15 @@
 package jp.tubeboard.features.tenants.controller;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
-import jp.tubeboard.features.tenants.dto.requeest.TenantsCreateRequest;
-import jp.tubeboard.features.tenants.dto.requeest.TenantsDeleteRequest;
-import jp.tubeboard.features.tenants.dto.requeest.TenantsUpdateRequest;
+import jp.tubeboard.features.tenants.dto.request.TenantsCreateRequest;
+import jp.tubeboard.features.tenants.dto.request.TenantsDeleteRequest;
+import jp.tubeboard.features.tenants.dto.request.TenantsUpdateRequest;
 import jp.tubeboard.features.tenants.dto.response.TenantsCreateResponse;
 import jp.tubeboard.features.tenants.dto.response.TenantsUpdateResponse;
 import jp.tubeboard.features.tenants.service.interfaces.ITenantsService;

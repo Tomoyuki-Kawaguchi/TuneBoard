@@ -26,6 +26,7 @@ export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: Tenant
         }
       }).catch((error: ApiClientError) => {
         const serverFieldErrors = error.apiError?.fieldErrors;
+        if(!serverFieldErrors) return;
         for(const key in serverFieldErrors){
           if(key in formValues){
             setFormValues((prev) => ({

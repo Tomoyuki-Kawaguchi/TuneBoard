@@ -19,7 +19,8 @@ function App() {
               </RequireAuth>
             }
           >
-            <Route path="/tenants" element={<TenantsPage />} />
+            <Route index element={<Navigate to="tenants" replace />} />
+            <Route path="tenants" element={<TenantsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

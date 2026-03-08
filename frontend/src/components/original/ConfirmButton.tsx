@@ -22,7 +22,8 @@ export const ConfirmButton = ({ children, onClick, defaultVariant, confirmVarian
         <div ref={ref}>
             <motion.div className="flex items-center space-x-2">
                 <Button onClick={handleClick} type="button" variant={ isConfirmingMode ? confirmVariant : defaultVariant}>
-                    {(isConfirmingMode ? "本当に": "") + children}
+                    {isConfirmingMode && "本当に"}
+                    {children}
                 </Button>
                 {isConfirmingMode && (
                     <Button variant="secondary" onClick ={()=>{setIsConfirming(false)}}>

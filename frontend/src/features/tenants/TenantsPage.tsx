@@ -22,7 +22,7 @@ export const TenantsPage = () => {
   }
 
   const onCreateSuccess = (newTenant: TenantsResponse) => {
-    setTenants([...tenants, newTenant]);
+    setTenants((prev) => [...prev, newTenant]);
   }
 
   const onUpdateSuccess = (updatedTenant: TenantsResponse) => {

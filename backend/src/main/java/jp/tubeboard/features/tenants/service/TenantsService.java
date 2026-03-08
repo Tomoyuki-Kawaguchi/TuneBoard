@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 
 import jp.tubeboard.features.auth.User;
 import jp.tubeboard.features.auth.UserService;
-import jp.tubeboard.features.tenants.dto.requeest.TenantsCreateRequest;
-import jp.tubeboard.features.tenants.dto.requeest.TenantsUpdateRequest;
+import jp.tubeboard.features.tenants.dto.request.TenantsCreateRequest;
+import jp.tubeboard.features.tenants.dto.request.TenantsUpdateRequest;
 import jp.tubeboard.features.tenants.dto.response.TenantsCreateResponse;
 import jp.tubeboard.features.tenants.dto.response.TenantsUpdateResponse;
 import jp.tubeboard.features.tenants.exception.TenantsNotFoundException;
