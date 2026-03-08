@@ -50,6 +50,11 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// ensure constructor parameter names are preserved for Jackson (records, data classes)
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-parameters']
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }
