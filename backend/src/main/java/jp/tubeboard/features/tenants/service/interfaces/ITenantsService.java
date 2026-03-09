@@ -15,6 +15,8 @@ public interface ITenantsService {
 
     public List<TenantsUpdateResponse> list();
 
+    public TenantsUpdateResponse get(UUID tenantId);
+
     public void delete(UUID id);
 
 }

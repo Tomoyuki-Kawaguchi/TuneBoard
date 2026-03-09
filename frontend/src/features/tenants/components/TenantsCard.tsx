@@ -1,4 +1,4 @@
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import type { TenantsFormValues, TenantsResponse } from "../type/type";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import type { ApiClientError } from "@/lib/api/type";
 import { ConfirmButton } from "@/components/original/ConfirmButton";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { InlineEditPanel } from "@/components/original/InlineEditPanel";
 
 export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: TenantsResponse; onUpdateSuccess: (updatedTenant: TenantsResponse) => void; onDelete?: (id: string) => void }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -50,24 +52,31 @@ export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: Tenant
     }
 
     return (
-        <Card>
+        <motion.div layout>
+        <Card className={isEditing ? "border-primary/30 shadow-md shadow-primary/5" : undefined}>
             <CardHeader>
-                <div className="flex items-center justify-between">
-                    <h4 className="text-2xl font-medium">{tenant.name}</h4>
-                    <Button size="sm" variant="outline" onClick={() => setIsEditing((prev) => !prev)}>
-                        {isEditing ? "キャンセル" : "編集"}
-                    </Button>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <h4 className="break-word text-xl font-medium sm:text-2xl">{tenant.name}</h4>
+                  </div>
+                  <Button className="w-full sm:w-auto" size="sm" variant="outline"  onClick={() => setIsEditing((prev) => !prev)}>
+                    {isEditing ? "キャンセル" : "編集"}
+                  </Button>
                 </div>
             </CardHeader>
             <CardContent className="space-y-2">
-                <p>テナントID: {tenant.id}</p>
+                <p className="break-all text-sm text-muted-foreground">テナントID: {tenant.id}</p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <Button asChild className="w-full sm:w-auto">
+                    <Link to={`/tenants/${tenant.id}/lives`}>ライブ一覧へ</Link>
+                  </Button>
+                </div>
             </CardContent>
-            {isEditing && (
-                <CardFooter>
-                    <motion.div className="w-full space-y-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <InlineEditPanel open={isEditing} >
+                    <motion.div layout className="w-full space-y-4">
                       <FieldGroup>
                         <Field>
-                          <FieldLabel htmlFor="name">新しいテナント名</FieldLabel>
+                          <FieldLabel htmlFor="name">新しいテナント名<span className="text-red-500">*</span></FieldLabel>
                           <Input
                             id="name"
                             value={formValues.name.value}
@@ -75,21 +84,17 @@ export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: Tenant
                               setFormValues((prev) => ({ ...prev, name: { ...prev.name, value: e.target.value, error: undefined } }))
                             }}
                           />
-                          {formValues.name.error && 
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                              <FieldError>{formValues.name.error}</FieldError>
-                            </motion.div>
-                          }
+                          {formValues.name.error ? <FieldError>{formValues.name.error}</FieldError> : null}
                         </Field>
                       </FieldGroup>
-                      <div className="flex justify-end gap-2">
+                      <div className="flex gap-2 border-t pt-2 justify-end">
                         <ConfirmButton onClick={onSubmit}>更新</ConfirmButton>
                         <ConfirmButton onClick={handleDelete} defaultVariant="outline" confirmVariant="destructive">
                           削除
                         </ConfirmButton>
                       </div>
                     </motion.div>
-                </CardFooter>
-            )}
-        </Card>);
+            </InlineEditPanel>
+        </Card>
+        </motion.div>);
 }

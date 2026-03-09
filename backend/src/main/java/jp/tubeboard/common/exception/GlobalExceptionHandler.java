@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import jp.tubeboard.features.lives.exception.LivesNotFoundException;
+import jp.tubeboard.features.tenants.exception.TenantsNotFoundException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -46,6 +49,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleBadRequest(IllegalArgumentException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler({ TenantsNotFoundException.class, LivesNotFoundException.class })
+    public ResponseEntity<ApiErrorResponse> handleDomainNotFound(RuntimeException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
