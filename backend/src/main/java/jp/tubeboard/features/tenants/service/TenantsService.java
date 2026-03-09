@@ -11,6 +11,7 @@ import jp.tubeboard.features.auth.User;
 import jp.tubeboard.features.auth.UserService;
 import jp.tubeboard.features.tenants.dto.request.TenantsCreateRequest;
 import jp.tubeboard.features.tenants.dto.request.TenantsUpdateRequest;
+import jp.tubeboard.features.tenants.dto.response.TenantResponse;
 import jp.tubeboard.features.tenants.dto.response.TenantsCreateResponse;
 import jp.tubeboard.features.tenants.dto.response.TenantsUpdateResponse;
 import jp.tubeboard.features.tenants.exception.TenantsNotFoundException;
@@ -59,22 +60,22 @@ public class TenantsService implements ITenantsService {
         }
 
         @Override
-        public List<TenantsUpdateResponse> list() {
+        public List<TenantResponse> list() {
                 User currentUser = userService.getCurrentUser();
 
                 List<Tenants> tenantsList = tenantsRepository.findAllByUserIdAndDeletedAtIsNull(currentUser.getId());
-                return tenantsList.stream().map(tenants -> TenantsUpdateResponse.builder()
+                return tenantsList.stream().map(tenants -> TenantResponse.builder()
                                 .id(tenants.getId())
                                 .name(tenants.getName())
                                 .build()).toList();
         }
 
         @Override
-        public TenantsUpdateResponse get(UUID tenantId) {
+        public TenantResponse get(UUID tenantId) {
                 User currentUser = userService.getCurrentUser();
                 Tenants optionalTenants = tenantsRepository.findByIdAndUserIdAndDeletedAtIsNull(tenantId,
                                 currentUser.getId()).orElseThrow(() -> new TenantsNotFoundException("テナントが見つかりません"));
-                return TenantsUpdateResponse.builder()
+                return TenantResponse.builder()
                                 .id(optionalTenants.getId())
                                 .name(optionalTenants.getName())
                                 .build();

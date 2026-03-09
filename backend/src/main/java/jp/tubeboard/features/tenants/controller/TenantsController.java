@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import jp.tubeboard.features.tenants.dto.request.TenantsCreateRequest;
 import jp.tubeboard.features.tenants.dto.request.TenantsDeleteRequest;
 import jp.tubeboard.features.tenants.dto.request.TenantsUpdateRequest;
+import jp.tubeboard.features.tenants.dto.response.TenantResponse;
 import jp.tubeboard.features.tenants.dto.response.TenantsCreateResponse;
 import jp.tubeboard.features.tenants.dto.response.TenantsUpdateResponse;
 import jp.tubeboard.features.tenants.service.interfaces.ITenantsService;
@@ -41,14 +42,14 @@ public class TenantsController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<List<TenantsUpdateResponse>> list() {
-        final List<TenantsUpdateResponse> tenants = tenantsService.list();
+    public ResponseEntity<List<TenantResponse>> list() {
+        final List<TenantResponse> tenants = tenantsService.list();
         return ResponseEntity.ok(tenants);
     }
 
     @GetMapping("/get/{tenantId}")
-    public ResponseEntity<TenantsUpdateResponse> get(@PathVariable(name = "tenantId") UUID tenantId) {
-        final TenantsUpdateResponse tenant = tenantsService.get(tenantId);
+    public ResponseEntity<TenantResponse> get(@PathVariable(name = "tenantId") UUID tenantId) {
+        final TenantResponse tenant = tenantsService.get(tenantId);
         return ResponseEntity.ok(tenant);
     }
 

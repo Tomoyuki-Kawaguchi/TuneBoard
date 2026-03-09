@@ -5,5 +5,5 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record TenantsDeleteRequest(
-                @NotNull(message = "テナントIDは必須です") UUID id) {
+        @NotNull(message = "テナントIDは必須です") UUID id) {
 }
