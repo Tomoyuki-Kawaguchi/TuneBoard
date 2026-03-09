@@ -57,7 +57,7 @@ export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: Tenant
             <CardHeader>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 space-y-1">
-                    <h4 className="wrap-break-word text-xl font-medium sm:text-2xl">{tenant.name}</h4>
+                    <h4 className="break-word text-xl font-medium sm:text-2xl">{tenant.name}</h4>
                   </div>
                   <Button className="w-full sm:w-auto" size="sm" variant="outline"  onClick={() => setIsEditing((prev) => !prev)}>
                     {isEditing ? "キャンセル" : "編集"}
