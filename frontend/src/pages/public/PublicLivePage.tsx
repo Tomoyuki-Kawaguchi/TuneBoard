@@ -16,6 +16,7 @@ export const PublicLivePage = () => {
 
   useEffect(() => {
     if (!publicToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setErrorMessage('公開URLが不正です');
       setIsLoading(false);
       return;
