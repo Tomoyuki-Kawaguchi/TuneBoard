@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup,FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { apiClient } from "@/lib/api/client";
@@ -8,6 +7,7 @@ import type { TenantsFormValues, TenantsResponse } from "../type/type";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { ConfirmButton } from "@/components/original/ConfirmButton";
+import { CreateAccordionCard } from "@/components/original/CreateAccordionCard";
 
 export const CreateTenantsCard = ({ onCreateSuccess }: { onCreateSuccess: (newTenant: TenantsResponse) => void }) => {
   const [formValues, setFormValues] = useState<TenantsFormValues>({ name: { value: "" } });
@@ -39,11 +39,10 @@ export const CreateTenantsCard = ({ onCreateSuccess }: { onCreateSuccess: (newTe
 
   return (
     <div>
-      <Card>
-        <CardHeader>
-          <h3 className="text-lg font-semibold">テナント新規作成</h3>
-        </CardHeader>
-        <CardContent>
+      <CreateAccordionCard
+        value="create-tenant"
+        title="テナント新規作成"
+      >
           <div className="space-y-2">
             <FieldGroup>
               <Field>
@@ -68,8 +67,7 @@ export const CreateTenantsCard = ({ onCreateSuccess }: { onCreateSuccess: (newTe
               </ConfirmButton>
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </CreateAccordionCard>
     </div>
   );
 }

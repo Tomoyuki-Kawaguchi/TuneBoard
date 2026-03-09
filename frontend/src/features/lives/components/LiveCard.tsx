@@ -118,7 +118,6 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
               <h3 className="text-xl font-semibold">{live.name}</h3>
               <Badge variant={badgeVariant}>{LIVE_STATUS_LABELS[live.status]}</Badge>
             </div>
-            {isEditing ? <p className="text-sm text-muted-foreground">ライブの基本情報をここで整理して更新できます。</p> : null}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => window.open(publicUrl, '_blank', 'noopener,noreferrer')}>

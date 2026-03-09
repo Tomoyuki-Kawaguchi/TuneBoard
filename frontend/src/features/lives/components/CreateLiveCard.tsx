@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { ConfirmButton } from '@/components/original/ConfirmButton';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { CreateAccordionCard } from '@/components/original/CreateAccordionCard';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { apiClient } from '@/lib/api/client';
@@ -76,13 +76,10 @@ export const CreateLiveCard = ({ tenantId, tenantName, onCreateSuccess }: Create
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold">{tenantName} のライブを作成</h2>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <CreateAccordionCard
+      value={`create-live-${tenantId}`}
+      title={`${tenantName} のライブ作成`}
+    >
         <FieldGroup>
           <Field>
             <FieldLabel htmlFor="live-name">ライブ名<p className="text-red-500">*</p></FieldLabel>
@@ -140,7 +137,6 @@ export const CreateLiveCard = ({ tenantId, tenantName, onCreateSuccess }: Create
             作成
           </ConfirmButton>
         </div>
-      </CardContent>
-    </Card>
+    </CreateAccordionCard>
   );
 };
