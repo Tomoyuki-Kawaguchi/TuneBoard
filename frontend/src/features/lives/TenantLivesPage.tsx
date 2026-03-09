@@ -31,12 +31,15 @@ export const TenantLivesPage = () => {
     }
 
     Promise.all([
-      apiClient.get<TenantsResponse[]>('/tenants/list'),
+      apiClient.get<TenantsResponse>(`/tenants/get/${tenantId}`),
       apiClient.get<LiveResponse[]>(`/lives/tenant/${tenantId}/list`),
     ])
       .then(([tenantResponse, liveResponse]) => {
-        const foundTenant = (tenantResponse ?? []).find((item) => item.id === tenantId) ?? null;
-        setTenant(foundTenant);
+        console.log(tenantResponse, liveResponse);
+        // const foundTenant = (tenantResponse ?? []).find((item) => item.id === tenantId) ?? null;
+        // console.log(foundTenant);
+        // setTenant(foundTenant);
+        setTenant(tenantResponse ?? null);
         setLives(liveResponse ?? []);
       })
       .catch(() => {

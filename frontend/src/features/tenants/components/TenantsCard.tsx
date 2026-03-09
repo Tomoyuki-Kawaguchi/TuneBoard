@@ -76,7 +76,7 @@ export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: Tenant
                     <motion.div layout className="w-full space-y-4">
                       <FieldGroup>
                         <Field>
-                          <FieldLabel htmlFor="name">新しいテナント名</FieldLabel>
+                          <FieldLabel htmlFor="name">新しいテナント名<span className="text-red-500">*</span></FieldLabel>
                           <Input
                             id="name"
                             value={formValues.name.value}

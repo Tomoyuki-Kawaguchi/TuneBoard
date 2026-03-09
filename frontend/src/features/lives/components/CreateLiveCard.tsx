@@ -82,7 +82,7 @@ export const CreateLiveCard = ({ tenantId, tenantName, onCreateSuccess }: Create
     >
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="live-name">ライブ名<p className="text-red-500">*</p></FieldLabel>
+            <FieldLabel htmlFor="live-name">ライブ名<span className="text-red-500">*</span></FieldLabel>
             <Input id="live-name" value={formValues.name.value} onChange={(event) => setFieldValue('name', event.target.value)} />
             {formValues.name.error ? <FieldError>{formValues.name.error}</FieldError> : null}
           </Field>

@@ -2,6 +2,7 @@ package jp.tubeboard.features.tenants.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -66,6 +67,17 @@ public class TenantsService implements ITenantsService {
                                 .id(tenants.getId())
                                 .name(tenants.getName())
                                 .build()).toList();
+        }
+
+        @Override
+        public TenantsUpdateResponse get(UUID tenantId) {
+                User currentUser = userService.getCurrentUser();
+                Tenants optionalTenants = tenantsRepository.findByIdAndUserIdAndDeletedAtIsNull(tenantId,
+                                currentUser.getId()).orElseThrow(() -> new TenantsNotFoundException("テナントが見つかりません"));
+                return TenantsUpdateResponse.builder()
+                                .id(optionalTenants.getId())
+                                .name(optionalTenants.getName())
+                                .build();
         }
 
         @Override

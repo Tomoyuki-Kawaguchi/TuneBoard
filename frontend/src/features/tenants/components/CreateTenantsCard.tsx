@@ -46,7 +46,7 @@ export const CreateTenantsCard = ({ onCreateSuccess }: { onCreateSuccess: (newTe
           <div className="space-y-2">
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="name">テナント名</FieldLabel>
+                <FieldLabel htmlFor="name">テナント名<span className="text-red-500">*</span></FieldLabel>
                 <Input
                   id="name"
                   value={formValues.name.value}
