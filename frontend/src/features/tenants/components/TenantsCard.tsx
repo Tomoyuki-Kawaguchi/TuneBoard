@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import type { ApiClientError } from "@/lib/api/type";
 import { ConfirmButton } from "@/components/original/ConfirmButton";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: TenantsResponse; onUpdateSuccess: (updatedTenant: TenantsResponse) => void; onDelete?: (id: string) => void }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -61,6 +62,11 @@ export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: Tenant
             </CardHeader>
             <CardContent className="space-y-2">
                 <p>テナントID: {tenant.id}</p>
+                <div className="flex justify-end">
+                  <Button asChild>
+                    <Link to={`/tenants/${tenant.id}/lives`}>ライブ一覧へ</Link>
+                  </Button>
+                </div>
             </CardContent>
             {isEditing && (
                 <CardFooter>

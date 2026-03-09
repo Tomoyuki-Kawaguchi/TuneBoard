@@ -4,6 +4,9 @@ import { Layout } from '@/features/layout/Layout';
 import { Login } from '@/pages/Login';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { TenantsPage } from './features/tenants/TenantsPage';
+import { PublicLivePage } from './pages/public/PublicLivePage';
+import { TenantLivesPage } from './features/lives/TenantLivesPage';
+import { LiveManagementPage } from './features/lives/LiveManagementPage';
 
 function App() {
   return (
@@ -11,6 +14,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/public/lives/:publicToken" element={<PublicLivePage />} />
           <Route
             path="/"
             element={
@@ -21,6 +25,8 @@ function App() {
           >
             <Route index element={<Navigate to="tenants" replace />} />
             <Route path="tenants" element={<TenantsPage />} />
+            <Route path="tenants/:tenantId/lives" element={<TenantLivesPage />} />
+            <Route path="tenants/:tenantId/lives/:liveId" element={<LiveManagementPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
