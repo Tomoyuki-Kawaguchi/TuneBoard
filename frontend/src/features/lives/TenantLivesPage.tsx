@@ -76,7 +76,7 @@ export const TenantLivesPage = () => {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/tenants">Tenants</Link>
+              <Link to="/tenants">テナント一覧</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
