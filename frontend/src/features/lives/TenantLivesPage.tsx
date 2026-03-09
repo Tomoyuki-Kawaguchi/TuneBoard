@@ -90,10 +90,10 @@ export const TenantLivesPage = () => {
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold">{tenant.name} のライブ管理</h1>
+            <div className="min-w-0">
+              <h1 className="break-words text-xl font-semibold sm:text-2xl">{tenant.name} のライブ管理</h1>
             </div>
-            <Button asChild variant="outline">
+            <Button asChild className="w-full md:w-auto" variant="outline">
               <Link to="/tenants">
                 <ChevronLeft className="size-4" />
                 テナント一覧へ戻る

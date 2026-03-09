@@ -11,13 +11,13 @@ export const Layout = () => {
     return (
         <div className="min-h-screen bg-background">
             <header className="border-b bg-card">
-                <div className="flex min-h-14 max-w-6xl items-center justify-between gap-4 px-4 py-3 mx-auto">
+                <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
                         <Link to="/" className="text-xl font-bold" aria-label="TuneBoard">
                             TuneBoard
                         </Link>
                     </div>
-                    <div className="flex items-center gap-3 text-sm">
+                    <div className="flex flex-wrap items-center gap-3 text-sm sm:justify-end">
                         {isAuthLoading ? (
                             <span className="text-muted-foreground">認証確認中...</span>
                         ) : authMe?.authenticated ? (
@@ -25,8 +25,8 @@ export const Layout = () => {
                                 {authMe.picture ? (
                                     <img src={authMe.picture} alt="Avatar" aria-label="Avatar" className="size-8 rounded-full" />
                                 ) : <span className="size-8 rounded-full bg-muted flex items-center justify-center text-xs text-white">{name.charAt(0)}</span>}
-                                <span className="text-muted-foreground">{name}</span>
-                                <Button onClick={logout} variant="outline" size="sm">                                    
+                                <span className="max-w-full break-all text-muted-foreground sm:max-w-48">{name}</span>
+                                <Button className="w-full sm:w-auto" onClick={logout} variant="outline" size="sm">                                    
                                     <LogOut/>
                                     Logout
                                 </Button>
@@ -35,7 +35,7 @@ export const Layout = () => {
                     </div>
                 </div>
             </header>
-            <main className="mx-auto max-w-6xl p-4">
+            <main className="mx-auto max-w-6xl p-3 sm:p-4">
                 <Outlet />
             </main>
         </div>

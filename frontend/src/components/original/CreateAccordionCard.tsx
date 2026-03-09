@@ -21,18 +21,18 @@ export const CreateAccordionCard = ({
         <AccordionItem value={value} className="border-b-0">
           <CardHeader>
             <AccordionTrigger className="items-center py-0 hover:no-underline">
-              <div className="flex items-center gap-4 text-left">
+              <div className="flex min-w-0 items-center gap-3 text-left sm:gap-4">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Plus className="size-4" />
                 </div>
-                <div className="space-y-1">
-                  <p className="text-base font-semibold text-foreground">{title}</p>
+                <div className="min-w-0 space-y-1">
+                  <p className="wrap-break-word text-sm font-semibold text-foreground sm:text-base">{title}</p>
                 </div>
               </div>
             </AccordionTrigger>
           </CardHeader>
           <AccordionContent>
-            <CardContent className="space-y-4 border-t bg-muted/20 pt-4 mt-2">
+            <CardContent className="mt-2 space-y-4 border-t bg-muted/20 px-4 pt-4 sm:px-6">
               {children}
             </CardContent>
           </AccordionContent>

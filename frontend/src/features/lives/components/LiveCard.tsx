@@ -113,28 +113,28 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
     <Card className={isEditing ? 'border-primary/30 shadow-md shadow-primary/5' : undefined}>
       <CardHeader>
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-semibold">{live.name}</h3>
+              <h3 className="break-words text-lg font-semibold sm:text-xl">{live.name}</h3>
               <Badge variant={badgeVariant}>{LIVE_STATUS_LABELS[live.status]}</Badge>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => window.open(publicUrl, '_blank', 'noopener,noreferrer')}>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+            <Button className="w-full sm:w-auto" type="button" variant="outline" size="sm" onClick={() => window.open(publicUrl, '_blank', 'noopener,noreferrer')}>
               <ExternalLink className="size-4" />
               公開ページ
             </Button>
-            <Button asChild type="button" variant="outline" size="sm">
+            <Button asChild className="w-full sm:w-auto" type="button" variant="outline" size="sm">
               <Link to={`/tenants/${tenantId}/lives/${live.id}`}>
                 <Settings2 className="size-4" />
                 管理
               </Link>
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
+            <Button className="w-full sm:w-auto" type="button" variant="outline" size="sm" onClick={handleCopy}>
               <Copy className="size-4" />
               URLコピー
             </Button>
-            <Button type="button" variant={isEditing ? 'default' : 'outline'} size="sm" onClick={() => setIsEditing((prev) => !prev)}>
+            <Button className="col-span-2 w-full sm:col-span-1 sm:w-auto" type="button" variant='outline' size="sm" onClick={() => setIsEditing((prev) => !prev)}>
               {isEditing ? 'キャンセル' : '編集'}
             </Button>
           </div>
@@ -145,11 +145,11 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
         <div className="grid gap-3 text-sm md:grid-cols-2">
           <div className="flex items-center gap-2 rounded-md bg-muted/40 px-3 py-2">
             <CalendarDays className="size-4 text-muted-foreground" />
-            <span>{formatLiveDate(live.date)}</span>
+            <span className="min-w-0 break-words">{formatLiveDate(live.date)}</span>
           </div>
           <div className="flex items-center gap-2 rounded-md bg-muted/40 px-3 py-2">
             <MapPin className="size-4 text-muted-foreground" />
-            <span>{formatOptionalText(live.location)}</span>
+            <span className="min-w-0 break-words">{formatOptionalText(live.location)}</span>
           </div>
         </div>
         <div className="rounded-md border px-3 py-2 text-sm">
@@ -216,7 +216,7 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
               </div>
             </FieldGroup>
 
-            <div className="flex flex-wrap justify-end gap-2 border-t pt-2">
+            <div className="flex border-t pt-2 gap-2 justify-end">
               <ConfirmButton onClick={onSubmit}>更新</ConfirmButton>
               <ConfirmButton onClick={handleDelete} defaultVariant="outline" confirmVariant="destructive">
                 削除

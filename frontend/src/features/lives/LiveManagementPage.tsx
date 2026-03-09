@@ -87,7 +87,6 @@ export const LiveManagementPage = () => {
                 <h1 className="text-2xl font-semibold">{live.name}</h1>
                 <Badge variant={badgeVariant}>{LIVE_STATUS_LABELS[live.status]}</Badge>
               </div>
-              <p className="text-sm text-muted-foreground">ライブ単位のセッティングシート管理ページです。</p>
             </div>
             <Button asChild variant="outline">
               <Link to={`/tenants/${tenantId}/lives`}>
@@ -135,8 +134,6 @@ export const LiveManagementPage = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>ここをライブ単位のセッティングシート管理の起点ページにしています。</p>
-          <p>次のステップでは、公開フォーム定義、提出一覧、PDF出力、重複曲確認などをこのページ配下に追加していくのが自然です。</p>
           <div className="flex gap-2">
             <Button asChild variant="outline">
               <a href={publicUrl} target="_blank" rel="noreferrer">

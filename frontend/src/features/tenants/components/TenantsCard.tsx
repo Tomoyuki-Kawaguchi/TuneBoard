@@ -11,7 +11,6 @@ import { ConfirmButton } from "@/components/original/ConfirmButton";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { InlineEditPanel } from "@/components/original/InlineEditPanel";
-import { PencilLine } from "lucide-react";
 
 export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: TenantsResponse; onUpdateSuccess: (updatedTenant: TenantsResponse) => void; onDelete?: (id: string) => void }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -56,21 +55,19 @@ export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: Tenant
         <motion.div layout>
         <Card className={isEditing ? "border-primary/30 shadow-md shadow-primary/5" : undefined}>
             <CardHeader>
-                <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h4 className="text-2xl font-medium">{tenant.name}</h4>
-                {isEditing ? <p className="text-sm text-muted-foreground">テナント情報をこの場で更新できます。</p> : null}
-              </div>
-              <Button size="sm" variant={isEditing ? "default" : "outline"} onClick={() => setIsEditing((prev) => !prev)}>
-                <PencilLine className="size-4" />
-                        {isEditing ? "キャンセル" : "編集"}
-                    </Button>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <h4 className="wrap-break-word text-xl font-medium sm:text-2xl">{tenant.name}</h4>
+                  </div>
+                  <Button className="w-full sm:w-auto" size="sm" variant="outline"  onClick={() => setIsEditing((prev) => !prev)}>
+                    {isEditing ? "キャンセル" : "編集"}
+                  </Button>
                 </div>
             </CardHeader>
             <CardContent className="space-y-2">
-                <p>テナントID: {tenant.id}</p>
-                <div className="flex justify-end">
-                  <Button asChild>
+                <p className="break-all text-sm text-muted-foreground">テナントID: {tenant.id}</p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <Button asChild className="w-full sm:w-auto">
                     <Link to={`/tenants/${tenant.id}/lives`}>ライブ一覧へ</Link>
                   </Button>
                 </div>
@@ -90,7 +87,7 @@ export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: Tenant
                           {formValues.name.error ? <FieldError>{formValues.name.error}</FieldError> : null}
                         </Field>
                       </FieldGroup>
-                      <div className="flex flex-wrap justify-end gap-2 border-t pt-2">
+                      <div className="flex gap-2 border-t pt-2 justify-end">
                         <ConfirmButton onClick={onSubmit}>更新</ConfirmButton>
                         <ConfirmButton onClick={handleDelete} defaultVariant="outline" confirmVariant="destructive">
                           削除
