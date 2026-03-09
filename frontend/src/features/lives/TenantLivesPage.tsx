@@ -12,7 +12,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardHeader } from '@/components/ui/card';
 import { CreateLiveCard } from './components/CreateLiveCard';
 import { LiveListCard } from './components/LiveListCard';
 import type { LiveResponse } from './types/type';
@@ -84,10 +84,6 @@ export const TenantLivesPage = () => {
           <BreadcrumbItem>
             <BreadcrumbPage>{tenant.name}</BreadcrumbPage>
           </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Lives</BreadcrumbPage>
-          </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
@@ -96,7 +92,6 @@ export const TenantLivesPage = () => {
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-semibold">{tenant.name} のライブ管理</h1>
-              <p className="text-sm text-muted-foreground">このテナントに属するライブの作成と一覧管理を行います。</p>
             </div>
             <Button asChild variant="outline">
               <Link to="/tenants">
@@ -106,9 +101,6 @@ export const TenantLivesPage = () => {
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">テナントID: {tenant.id}</p>
-        </CardContent>
       </Card>
 
       <CreateLiveCard tenantId={tenant.id} tenantName={tenant.name} onCreateSuccess={handleCreateSuccess} />

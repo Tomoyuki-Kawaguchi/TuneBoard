@@ -1,4 +1,4 @@
-import { Outlet, Link, NavLink } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { useAuthContext } from '@/features/auth/authContext';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
@@ -7,8 +7,6 @@ export const Layout = () => {
     const { authMe, logout, isAuthLoading } = useAuthContext();
 
     const name = authMe?.name || authMe?.email || 'User';
-    const navLinkClassName = ({ isActive }: { isActive: boolean }) =>
-        `rounded-md px-3 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`;
 
     return (
         <div className="min-h-screen bg-background">
@@ -18,11 +16,6 @@ export const Layout = () => {
                         <Link to="/" className="text-xl font-bold" aria-label="TuneBoard">
                             TuneBoard
                         </Link>
-                        <nav className="flex items-center gap-2">
-                            <NavLink to="/tenants" className={navLinkClassName}>
-                                Tenants
-                            </NavLink>
-                        </nav>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                         {isAuthLoading ? (

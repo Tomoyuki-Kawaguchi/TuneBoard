@@ -69,7 +69,7 @@ export const LiveManagementPage = () => {
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to={`/tenants/${tenantId}/lives`}>Lives</Link>
+              <Link to={`/tenants/${tenantId}/lives`}>{live.tenantName}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />

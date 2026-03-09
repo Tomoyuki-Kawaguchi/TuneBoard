@@ -1,7 +1,7 @@
 import { CalendarRange } from 'lucide-react';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 
 import type { LiveResponse } from '../types/type';
 import { LiveCard } from './LiveCard';
@@ -28,9 +28,6 @@ export const LiveListCard = ({ lives, tenantName, tenantId, onUpdateSuccess, onD
                 <CalendarRange />
               </EmptyMedia>
               <EmptyTitle>ライブがまだありません</EmptyTitle>
-              <EmptyDescription>
-                上のフォームからライブを作成すると、このテナントの公開URLを一覧で管理できます。
-              </EmptyDescription>
             </EmptyHeader>
           </Empty>
         ) : (

@@ -115,7 +115,6 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
               <h3 className="text-xl font-semibold">{live.name}</h3>
               <Badge variant={badgeVariant}>{LIVE_STATUS_LABELS[live.status]}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground">テナント: {live.tenantName}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => window.open(publicUrl, '_blank', 'noopener,noreferrer')}>
@@ -165,7 +164,7 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
           <div className="space-y-4">
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor={`name-${live.id}`}>ライブ名</FieldLabel>
+                <FieldLabel htmlFor={`name-${live.id}`}>ライブ名<p className="text-red-500">*</p></FieldLabel>
                 <Input id={`name-${live.id}`} value={formValues.name.value} onChange={(event) => setFieldValue('name', event.target.value)} />
                 {formValues.name.error ? <FieldError>{formValues.name.error}</FieldError> : null}
               </Field>
@@ -174,7 +173,6 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
                 <Field>
                   <FieldLabel htmlFor={`date-${live.id}`}>開催日</FieldLabel>
                   <Input id={`date-${live.id}`} type="date" value={formValues.date.value} onChange={(event) => setFieldValue('date', event.target.value)} />
-                  <p className="text-xs text-muted-foreground">未定の場合は空欄のままで保存できます。</p>
                   {formValues.date.error ? <FieldError>{formValues.date.error}</FieldError> : null}
                 </Field>
 
@@ -186,7 +184,6 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
                     value={formValues.deadlineAt.value}
                     onChange={(event) => setFieldValue('deadlineAt', event.target.value)}
                   />
-                  <p className="text-xs text-muted-foreground">未定の場合は空欄のままで保存できます。</p>
                   {formValues.deadlineAt.error ? <FieldError>{formValues.deadlineAt.error}</FieldError> : null}
                 </Field>
               </div>
@@ -195,7 +192,6 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
                 <Field>
                   <FieldLabel htmlFor={`location-${live.id}`}>会場</FieldLabel>
                   <Input id={`location-${live.id}`} value={formValues.location.value} onChange={(event) => setFieldValue('location', event.target.value)} />
-                  <p className="text-xs text-muted-foreground">会場未定でも問題ありません。</p>
                   {formValues.location.error ? <FieldError>{formValues.location.error}</FieldError> : null}
                 </Field>
 

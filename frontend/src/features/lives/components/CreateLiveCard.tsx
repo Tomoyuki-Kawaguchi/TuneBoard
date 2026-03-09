@@ -80,13 +80,12 @@ export const CreateLiveCard = ({ tenantId, tenantName, onCreateSuccess }: Create
       <CardHeader>
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">{tenantName} のライブを作成</h2>
-          <p className="text-sm text-muted-foreground">このテナント配下に新しいライブを追加します。</p>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="live-name">ライブ名</FieldLabel>
+            <FieldLabel htmlFor="live-name">ライブ名<p className="text-red-500">*</p></FieldLabel>
             <Input id="live-name" value={formValues.name.value} onChange={(event) => setFieldValue('name', event.target.value)} />
             {formValues.name.error ? <FieldError>{formValues.name.error}</FieldError> : null}
           </Field>
@@ -95,7 +94,6 @@ export const CreateLiveCard = ({ tenantId, tenantName, onCreateSuccess }: Create
             <Field>
               <FieldLabel htmlFor="live-date">開催日</FieldLabel>
               <Input id="live-date" type="date" value={formValues.date.value} onChange={(event) => setFieldValue('date', event.target.value)} />
-              <p className="text-xs text-muted-foreground">未定の場合は空欄のままで保存できます。</p>
               {formValues.date.error ? <FieldError>{formValues.date.error}</FieldError> : null}
             </Field>
 
@@ -107,7 +105,6 @@ export const CreateLiveCard = ({ tenantId, tenantName, onCreateSuccess }: Create
                 value={formValues.deadlineAt.value}
                 onChange={(event) => setFieldValue('deadlineAt', event.target.value)}
               />
-              <p className="text-xs text-muted-foreground">未定の場合は空欄のままで保存できます。</p>
               {formValues.deadlineAt.error ? <FieldError>{formValues.deadlineAt.error}</FieldError> : null}
             </Field>
           </div>
@@ -116,7 +113,6 @@ export const CreateLiveCard = ({ tenantId, tenantName, onCreateSuccess }: Create
             <Field>
               <FieldLabel htmlFor="live-location">会場</FieldLabel>
               <Input id="live-location" value={formValues.location.value} onChange={(event) => setFieldValue('location', event.target.value)} />
-              <p className="text-xs text-muted-foreground">会場未定でも問題ありません。</p>
               {formValues.location.error ? <FieldError>{formValues.location.error}</FieldError> : null}
             </Field>
 
