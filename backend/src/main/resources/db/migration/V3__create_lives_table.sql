@@ -11,7 +11,7 @@ CREATE TABLE lives (
     location VARCHAR(255),
     deadline_at TIMESTAMP NULL,
     status VARCHAR(40) NOT NULL,
-    settings_json CLOB NULL,
+    settings_json TEXT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     deleted_at TIMESTAMP NULL
@@ -19,8 +19,3 @@ CREATE TABLE lives (
 
 ALTER TABLE lives
 ADD CONSTRAINT fk_lives_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id);
-
--- dropped NOT NULL constraints to allow unspecified schedule
-ALTER TABLE lives ALTER COLUMN date DROP NOT NULL;
-
-ALTER TABLE lives ALTER COLUMN location DROP NOT NULL;

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { formatDeadline, formatLiveDate, formatOptionalText, LIVE_STATUS_LABELS, type LiveResponse } from './types/type';
+import { buildPublicLiveUrl, formatDeadline, formatLiveDate, formatOptionalText, LIVE_STATUS_LABELS, type LiveResponse } from './types/type';
 import { apiClient } from '@/lib/api/client';
 import { Badge } from '@/components/ui/badge';
 
@@ -54,7 +54,7 @@ export const LiveManagementPage = () => {
     return <Navigate to={`/tenants/${tenantId}/lives`} replace />;
   }
 
-  const publicUrl = `${window.location.origin}/public/lives/${live.publicToken}`;
+  const publicUrl = buildPublicLiveUrl(live.publicToken);
   const badgeVariant = live.status === 'CLOSED' ? 'destructive' : live.status === 'PUBLISHED' ? 'default' : 'secondary';
 
   return (
@@ -130,7 +130,7 @@ export const LiveManagementPage = () => {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Settings2 className="size-5" />
-            <h2 className="text-lg font-semibold">Live Management</h2>
+            <h2 className="text-lg font-semibold">ライブ管理</h2>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">

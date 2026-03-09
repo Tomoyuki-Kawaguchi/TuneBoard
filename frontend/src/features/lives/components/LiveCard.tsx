@@ -98,6 +98,8 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
     apiClient.post<void>('/lives/delete', { id: live.id }).then(() => {
       onDelete(live.id);
       toast.success('ライブを削除しました', { position: 'top-center' });
+    }).catch(() => {
+      toast.error('ライブの削除に失敗しました', { position: 'top-center' });
     });
   };
 

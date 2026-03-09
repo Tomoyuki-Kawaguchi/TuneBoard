@@ -35,10 +35,6 @@ export const TenantLivesPage = () => {
       apiClient.get<LiveResponse[]>(`/lives/tenant/${tenantId}/list`),
     ])
       .then(([tenantResponse, liveResponse]) => {
-        console.log(tenantResponse, liveResponse);
-        // const foundTenant = (tenantResponse ?? []).find((item) => item.id === tenantId) ?? null;
-        // console.log(foundTenant);
-        // setTenant(foundTenant);
         setTenant(tenantResponse ?? null);
         setLives(liveResponse ?? []);
       })
