@@ -1,4 +1,4 @@
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import type { TenantsFormValues, TenantsResponse } from "../type/type";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import type { ApiClientError } from "@/lib/api/type";
 import { ConfirmButton } from "@/components/original/ConfirmButton";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { InlineEditPanel } from "@/components/original/InlineEditPanel";
+import { PencilLine } from "lucide-react";
 
 export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: TenantsResponse; onUpdateSuccess: (updatedTenant: TenantsResponse) => void; onDelete?: (id: string) => void }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -51,11 +53,16 @@ export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: Tenant
     }
 
     return (
-        <Card>
+        <motion.div layout>
+        <Card className={isEditing ? "border-primary/30 shadow-md shadow-primary/5" : undefined}>
             <CardHeader>
                 <div className="flex items-center justify-between">
-                    <h4 className="text-2xl font-medium">{tenant.name}</h4>
-                    <Button size="sm" variant="outline" onClick={() => setIsEditing((prev) => !prev)}>
+              <div className="space-y-1">
+                <h4 className="text-2xl font-medium">{tenant.name}</h4>
+                {isEditing ? <p className="text-sm text-muted-foreground">テナント情報をこの場で更新できます。</p> : null}
+              </div>
+              <Button size="sm" variant={isEditing ? "default" : "outline"} onClick={() => setIsEditing((prev) => !prev)}>
+                <PencilLine className="size-4" />
                         {isEditing ? "キャンセル" : "編集"}
                     </Button>
                 </div>
@@ -68,9 +75,8 @@ export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: Tenant
                   </Button>
                 </div>
             </CardContent>
-            {isEditing && (
-                <CardFooter>
-                    <motion.div className="w-full space-y-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <InlineEditPanel open={isEditing} >
+                    <motion.div layout className="w-full space-y-4">
                       <FieldGroup>
                         <Field>
                           <FieldLabel htmlFor="name">新しいテナント名</FieldLabel>
@@ -81,21 +87,17 @@ export const TenantsCard = ({tenant,onUpdateSuccess, onDelete}: { tenant: Tenant
                               setFormValues((prev) => ({ ...prev, name: { ...prev.name, value: e.target.value, error: undefined } }))
                             }}
                           />
-                          {formValues.name.error && 
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                              <FieldError>{formValues.name.error}</FieldError>
-                            </motion.div>
-                          }
+                          {formValues.name.error ? <FieldError>{formValues.name.error}</FieldError> : null}
                         </Field>
                       </FieldGroup>
-                      <div className="flex justify-end gap-2">
+                      <div className="flex flex-wrap justify-end gap-2 border-t pt-2">
                         <ConfirmButton onClick={onSubmit}>更新</ConfirmButton>
                         <ConfirmButton onClick={handleDelete} defaultVariant="outline" confirmVariant="destructive">
                           削除
                         </ConfirmButton>
                       </div>
                     </motion.div>
-                </CardFooter>
-            )}
-        </Card>);
+            </InlineEditPanel>
+        </Card>
+        </motion.div>);
 }

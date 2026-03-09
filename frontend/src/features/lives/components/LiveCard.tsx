@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { CalendarDays, Copy, ExternalLink, MapPin, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 import { ConfirmButton } from '@/components/original/ConfirmButton';
+import { InlineEditPanel } from '@/components/original/InlineEditPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
@@ -107,7 +109,8 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
   const badgeVariant = live.status === 'CLOSED' ? 'destructive' : live.status === 'PUBLISHED' ? 'default' : 'secondary';
 
   return (
-    <Card>
+    <motion.div layout>
+    <Card className={isEditing ? 'border-primary/30 shadow-md shadow-primary/5' : undefined}>
       <CardHeader>
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
@@ -115,6 +118,7 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
               <h3 className="text-xl font-semibold">{live.name}</h3>
               <Badge variant={badgeVariant}>{LIVE_STATUS_LABELS[live.status]}</Badge>
             </div>
+            {isEditing ? <p className="text-sm text-muted-foreground">ライブの基本情報をここで整理して更新できます。</p> : null}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => window.open(publicUrl, '_blank', 'noopener,noreferrer')}>
@@ -131,7 +135,7 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
               <Copy className="size-4" />
               URLコピー
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing((prev) => !prev)}>
+            <Button type="button" variant={isEditing ? 'default' : 'outline'} size="sm" onClick={() => setIsEditing((prev) => !prev)}>
               {isEditing ? 'キャンセル' : '編集'}
             </Button>
           </div>
@@ -159,12 +163,11 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
         </div>
       </CardContent>
 
-      {isEditing ? (
-        <CardFooter className="block border-t pt-6">
-          <div className="space-y-4">
+      <InlineEditPanel open={isEditing} >
+          <motion.div layout className="space-y-4">
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor={`name-${live.id}`}>ライブ名<p className="text-red-500">*</p></FieldLabel>
+                <FieldLabel htmlFor={`name-${live.id}`}>ライブ名<span className="text-red-500">*</span></FieldLabel>
                 <Input id={`name-${live.id}`} value={formValues.name.value} onChange={(event) => setFieldValue('name', event.target.value)} />
                 {formValues.name.error ? <FieldError>{formValues.name.error}</FieldError> : null}
               </Field>
@@ -214,15 +217,15 @@ export const LiveCard = ({ live, tenantId, onUpdateSuccess, onDelete }: LiveCard
               </div>
             </FieldGroup>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-wrap justify-end gap-2 border-t pt-2">
               <ConfirmButton onClick={onSubmit}>更新</ConfirmButton>
               <ConfirmButton onClick={handleDelete} defaultVariant="outline" confirmVariant="destructive">
                 削除
               </ConfirmButton>
             </div>
-          </div>
-        </CardFooter>
-      ) : null}
+          </motion.div>
+      </InlineEditPanel>
     </Card>
+    </motion.div>
   );
 };
