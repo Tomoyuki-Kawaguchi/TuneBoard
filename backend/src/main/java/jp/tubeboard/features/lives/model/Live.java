@@ -59,4 +59,7 @@ public class Live extends Audit {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 40)
     private LiveStatus status;
+
+    @Column(name = "settings_json", columnDefinition = "TEXT")
+    private String settingsJson;
 }
