@@ -5,8 +5,13 @@ import java.util.UUID;
 
 import jp.tubeboard.features.lives.dto.request.LiveCreateRequest;
 import jp.tubeboard.features.lives.dto.request.LiveUpdateRequest;
+import jp.tubeboard.features.lives.dto.request.PublicSettingSheetSubmissionRequest;
+import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest;
 import jp.tubeboard.features.lives.dto.response.LiveResponse;
 import jp.tubeboard.features.lives.dto.response.PublicLiveResponse;
+import jp.tubeboard.features.lives.dto.response.PublicSettingSheetSubmissionDetailResponse;
+import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse;
+import jp.tubeboard.features.lives.dto.response.SettingSheetSubmissionResponse;
 
 public interface ILivesService {
 
@@ -23,4 +28,17 @@ public interface ILivesService {
     void delete(UUID id);
 
     PublicLiveResponse findPublicLive(String publicToken);
+
+    SettingSheetConfigResponse getSettingSheetConfig(UUID id);
+
+    SettingSheetConfigResponse updateSettingSheetConfig(UUID id, SettingSheetConfigUpdateRequest request);
+
+    SettingSheetSubmissionResponse submitPublicSettingSheet(String publicToken,
+            PublicSettingSheetSubmissionRequest request);
+
+        PublicSettingSheetSubmissionDetailResponse getPublicSettingSheetSubmission(String publicToken, UUID submissionId);
+
+        SettingSheetSubmissionResponse updatePublicSettingSheetSubmission(String publicToken,
+            UUID submissionId,
+            PublicSettingSheetSubmissionRequest request);
 }
