@@ -36,6 +36,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/health/error").permitAll()
                                                 .requestMatchers("/api/auth/me").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/public/lives/**").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/public/lives/**").permitAll()
+                                                .requestMatchers(HttpMethod.PUT, "/api/public/lives/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/google/login").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/google/callback")
                                                 .permitAll()
