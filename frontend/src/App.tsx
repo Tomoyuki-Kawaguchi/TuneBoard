@@ -7,6 +7,7 @@ import { TenantsPage } from './features/tenants/TenantsPage';
 import { PublicLivePage } from './pages/public/PublicLivePage';
 import { TenantLivesPage } from './features/lives/TenantLivesPage';
 import { LiveManagementPage } from './features/lives/LiveManagementPage';
+import { LiveFormEditorPage } from './features/lives/LiveFormEditorPage';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/public/lives/:publicToken" element={<PublicLivePage />} />
+          <Route path="/public/lives/:publicToken/submissions/:submissionId" element={<PublicLivePage />} />
           <Route
             path="/"
             element={
@@ -27,6 +29,7 @@ function App() {
             <Route path="tenants" element={<TenantsPage />} />
             <Route path="tenants/:tenantId/lives" element={<TenantLivesPage />} />
             <Route path="tenants/:tenantId/lives/:liveId" element={<LiveManagementPage />} />
+            <Route path="tenants/:tenantId/lives/:liveId/form" element={<LiveFormEditorPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
