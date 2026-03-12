@@ -15,7 +15,9 @@ import jakarta.validation.Valid;
 import jp.tubeboard.features.lives.dto.request.LiveCreateRequest;
 import jp.tubeboard.features.lives.dto.request.LiveDeleteRequest;
 import jp.tubeboard.features.lives.dto.request.LiveUpdateRequest;
+import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest;
 import jp.tubeboard.features.lives.dto.response.LiveResponse;
+import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse;
 import jp.tubeboard.features.lives.service.interfaces.ILivesService;
 import lombok.AllArgsConstructor;
 
@@ -55,5 +57,17 @@ public class LivesController {
     public ResponseEntity<Void> delete(@RequestBody @Valid LiveDeleteRequest request) {
         livesService.delete(request.id());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/setting-sheet/config")
+    public ResponseEntity<SettingSheetConfigResponse> getSettingSheetConfig(@PathVariable(name = "id") UUID id) {
+        return ResponseEntity.ok(livesService.getSettingSheetConfig(id));
+    }
+
+    @PostMapping("/{id}/setting-sheet/config")
+    public ResponseEntity<SettingSheetConfigResponse> updateSettingSheetConfig(
+            @PathVariable(name = "id") UUID id,
+            @RequestBody @Valid SettingSheetConfigUpdateRequest request) {
+        return ResponseEntity.ok(livesService.updateSettingSheetConfig(id, request));
     }
 }
