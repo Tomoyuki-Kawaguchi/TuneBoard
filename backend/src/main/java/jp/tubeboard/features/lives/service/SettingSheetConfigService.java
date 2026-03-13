@@ -27,38 +27,42 @@ public class SettingSheetConfigService {
 
     public SettingSheetConfigResponse defaultSettingSheetConfig() {
         List<FormBlockResponse> memberFields = List.of(
-                textBlock("member-name", "氏名", true, layoutHalf(1)),
+                textBlock("member-name", "氏名", true, layoutTwoThirds(1)),
+                booleanBlock("member-representative", "代表者", "代表者にチェックを入れてください。", layoutThird(1)),
                 selectBlock("member-parts", SettingSheetConstants.BLOCK_MULTI_SELECT, "担当パート", true,
-                        List.of("Vo", "Gt", "Ba", "Dr", "Key", "Cho", "DJ"), null, layoutHalf(2)),
-                booleanBlock("member-representative", "代表者", "代表者にチェックを入れてください。", layoutHalf(1)));
+                        List.of("Vo", "Gt", "Ba", "Dr", "Key", "Cho", "DJ"), null, layoutFull(3)));
+
         List<FormBlockResponse> songMicFields = List.of(
                 selectBlock("mic-member", SettingSheetConstants.BLOCK_SINGLE_SELECT, "担当者", true, List.of(),
-                        optionSource("members", "member-name"), layoutHalf(1)),
-                booleanBlock("mic-main-vocal", "メインボーカル", "", layoutHalf(1)));
+                        optionSource("members", "member-name"), layoutTwoThirds(1)),
+                booleanBlock("mic-main-vocal", "メインボーカル", "", layoutThird(1)));
+
         List<FormBlockResponse> songFields = List.of(
                 textBlock("song-title", "曲名", true, layoutHalf(1)),
                 textBlock("song-artist", "アーティスト名", true, layoutHalf(1)),
                 selectBlock("song-parts", SettingSheetConstants.BLOCK_MULTI_SELECT, "使うパート", true,
-                        List.of("Vo", "Gt", "Ba", "Dr", "Key", "Cho", "SE", "同期"), null, layoutFull(2)),
+                        List.of("Vo", "Gt", "Ba", "Dr", "Key", "Cho", "SE", "同期"), null, layoutFull(3)),
                 longTextBlock("song-note-pa", "PAへの要望", false, layoutHalf(1)),
                 longTextBlock("song-note-light", "照明への要望", false, layoutHalf(1)),
                 longTextBlock("song-note-other", "備考", false, layoutFull(1)),
                 groupBlock("song-mics", "使うマイク", "誰がどのマイクを使うか入力します。", false, true, 0, "マイク追加", "マイク",
                         "mic-member", layoutFull(1), songMicFields));
+
+        List<FormBlockResponse> bandFields = List.of(
+                textBlock("band-name", "バンド名", true, layoutTwoThirds(1)),
+                selectBlock("submission-status", SettingSheetConstants.BLOCK_SINGLE_SELECT, "提出状況", true,
+                        List.of("未完成", "完成"), null, layoutThird(1)),
+                longTextBlock("detail", "備考", false, layoutFull(1)),
+                groupBlock("members", "出演者", "出演者と担当パートを入力します。", true, true, 1, "メンバー追加", "メンバー",
+                        "member-name", layoutFull(1), memberFields),
+                groupBlock("songs", "演奏する曲", "曲名、使用パート、マイク設定を入力します。", true, true, 1, "曲を追加", "曲",
+                        "song-title", layoutFull(1), songFields));
+
         return new SettingSheetConfigResponse(
-                SettingSheetConstants.DEFAULT_FORM_TITLE,
-                SettingSheetConstants.DEFAULT_FORM_DESCRIPTION,
-                SettingSheetConstants.DEFAULT_SUBMIT_LABEL,
-                List.of(
-                        sectionBlock("section-band", "バンド基本情報", "バンド名、提出状況、備考を入力します。"),
-                        textBlock("band-name", "バンド名", true, layoutTwoThirds(1)),
-                        selectBlock("submission-status", SettingSheetConstants.BLOCK_SINGLE_SELECT, "提出状況", true,
-                                List.of("未完成", "完成"), null, layoutThird(1)),
-                        longTextBlock("detail", "備考", false, layoutFull(1)),
-                        groupBlock("members", "出演者", "出演者と担当パートを入力します。", true, true, 1, "メンバー追加", "メンバー",
-                                "member-name", layoutFull(1), memberFields),
-                        groupBlock("songs", "演奏する曲", "曲名、使用パート、マイク設定を入力します。", true, true, 1, "曲を追加", "曲",
-                                "song-title", layoutFull(1), songFields)));
+                "バンド申請フォーム",
+                "出演情報、メンバー、演奏曲を入力してください。",
+                "送信する",
+                List.of(sectionBlock("section-band", "バンド基本情報", "バンド名、提出状況、備考を入力します。", bandFields)));
     }
 
     public SettingSheetConfigResponse readSettingSheetConfig(Live live) {
@@ -88,9 +92,9 @@ public class SettingSheetConfigService {
 
     public SettingSheetConfigResponse normalizeSettingSheetConfig(SettingSheetConfigUpdateRequest request) {
         return new SettingSheetConfigResponse(
-                safeTextOrDefault(request.title(), SettingSheetConstants.DEFAULT_FORM_TITLE),
-                safeTextOrDefault(request.description(), SettingSheetConstants.DEFAULT_FORM_DESCRIPTION),
-                safeTextOrDefault(request.submitButtonLabel(), SettingSheetConstants.DEFAULT_SUBMIT_LABEL),
+                safeTextOrDefault(request.title(), "バンド申請フォーム"),
+                safeTextOrDefault(request.description(), "出演情報、メンバー、演奏曲を入力してください。"),
+                safeTextOrDefault(request.submitButtonLabel(), "送信する"),
                 normalizeBlocks(request.blocks()));
     }
 
@@ -223,11 +227,12 @@ public class SettingSheetConfigService {
         return normalized.isEmpty() ? fallback : normalized;
     }
 
-    private FormBlockResponse sectionBlock(String id, String label, String description) {
+    private FormBlockResponse sectionBlock(String id, String label, String description,
+            List<FormBlockResponse> children) {
         return new FormBlockResponse(id, SettingSheetConstants.BLOCK_SECTION, label, description, false, false, false,
                 SettingSheetConstants.APPEARANCE_PLAIN, SettingSheetConstants.APPEARANCE_PLAIN, List.of(), 0, "", "",
                 "",
-                List.of(), layoutFull(1), null);
+                children, layoutFull(1), null);
     }
 
     private FormBlockResponse textBlock(String id, String label, boolean required, LayoutResponse layout) {

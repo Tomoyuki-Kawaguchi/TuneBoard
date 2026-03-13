@@ -53,6 +53,11 @@ export function useSettingSheetForm({ publicToken, live, submission, onSubmitted
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    const draft = window.localStorage.getItem(storageKey);
+    setFormValues(draft ? parseSettingSheetDraft(draft, settingSheetConfig.blocks).values : initialValues);
+  }, [initialValues, settingSheetConfig.blocks, storageKey]);
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       const nextSavedAt = new Date().toISOString();
       window.localStorage.setItem(storageKey, JSON.stringify({ savedAt: nextSavedAt, values: formValues }));

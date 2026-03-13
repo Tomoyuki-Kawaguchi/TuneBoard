@@ -23,11 +23,16 @@ export function usePublicLiveData(publicToken: string | undefined, submissionId:
     let cancelled = false;
 
     if (!publicToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ errorMessage: '公開URLが不正です', isLoading: false, live: null, submission: null });
       return () => {
         cancelled = true;
       };
     }
+
+    // publicToken/submissionId の変更直後は一度ローディング状態に戻し、
+    // submission の取得前にフォームが初期値で描画されるのを防ぐ
+    setState({ errorMessage: '', isLoading: true, live: null, submission: null });
 
     const load = async () => {
       try {
