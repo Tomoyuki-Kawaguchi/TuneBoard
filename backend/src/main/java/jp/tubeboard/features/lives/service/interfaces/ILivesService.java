@@ -29,6 +29,8 @@ public interface ILivesService {
 
     PublicLiveResponse findPublicLive(String publicToken);
 
+    SettingSheetConfigResponse getDefaultSettingSheetConfig();
+
     SettingSheetConfigResponse getSettingSheetConfig(UUID id);
 
     SettingSheetConfigResponse updateSettingSheetConfig(UUID id, SettingSheetConfigUpdateRequest request);
@@ -36,9 +38,9 @@ public interface ILivesService {
     SettingSheetSubmissionResponse submitPublicSettingSheet(String publicToken,
             PublicSettingSheetSubmissionRequest request);
 
-        PublicSettingSheetSubmissionDetailResponse getPublicSettingSheetSubmission(String publicToken, UUID submissionId);
+    PublicSettingSheetSubmissionDetailResponse getPublicSettingSheetSubmission(String publicToken, UUID submissionId);
 
-        SettingSheetSubmissionResponse updatePublicSettingSheetSubmission(String publicToken,
+    SettingSheetSubmissionResponse updatePublicSettingSheetSubmission(String publicToken,
             UUID submissionId,
             PublicSettingSheetSubmissionRequest request);
 }

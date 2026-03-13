@@ -132,6 +132,11 @@ public class LivesService implements ILivesService {
     }
 
     @Override
+    public SettingSheetConfigResponse getDefaultSettingSheetConfig() {
+        return settingSheetConfigService.defaultSettingSheetConfig();
+    }
+
+    @Override
     public SettingSheetConfigResponse getSettingSheetConfig(UUID id) {
         return settingSheetConfigService.readSettingSheetConfig(findOwnedLive(id));
     }

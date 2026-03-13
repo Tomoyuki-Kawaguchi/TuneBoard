@@ -59,6 +59,11 @@ public class LivesController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/setting-sheet/config/default")
+    public ResponseEntity<SettingSheetConfigResponse> getDefaultSettingSheetConfig() {
+        return ResponseEntity.ok(livesService.getDefaultSettingSheetConfig());
+    }
+
     @GetMapping("/{id}/setting-sheet/config")
     public ResponseEntity<SettingSheetConfigResponse> getSettingSheetConfig(@PathVariable(name = "id") UUID id) {
         return ResponseEntity.ok(livesService.getSettingSheetConfig(id));

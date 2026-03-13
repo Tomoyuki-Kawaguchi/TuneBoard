@@ -61,7 +61,7 @@ export const SettingSheetForm = ({ publicToken, live, submission }: SettingSheet
           <Card className="overflow-hidden border-border bg-card text-card-foreground">
             <CardHeader className="space-y-5 pb-6">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">TuneBoard Setting Sheet</p>
+                <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">TUNEBOARD</p>
                 <Badge variant={live.status === 'CLOSED' ? 'destructive' : live.status === 'PUBLISHED' ? 'default' : 'secondary'}>
                   {LIVE_STATUS_LABELS[live.status]}
                 </Badge>
