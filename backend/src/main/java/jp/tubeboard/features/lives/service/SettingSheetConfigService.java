@@ -52,17 +52,18 @@ public class SettingSheetConfigService {
                 textBlock("band-name", "バンド名", true, layoutTwoThirds(1)),
                 selectBlock("submission-status", SettingSheetConstants.BLOCK_SINGLE_SELECT, "提出状況", true,
                         List.of("未完成", "完成"), null, layoutThird(1)),
-                longTextBlock("detail", "備考", false, layoutFull(1)),
-                groupBlock("members", "出演者", "出演者と担当パートを入力します。", true, true, 1, "メンバー追加", "メンバー",
-                        "member-name", layoutFull(1), memberFields),
-                groupBlock("songs", "演奏する曲", "曲名、使用パート、マイク設定を入力します。", true, true, 1, "曲を追加", "曲",
-                        "song-title", layoutFull(1), songFields));
+                longTextBlock("detail", "備考", false, layoutFull(1)));
 
         return new SettingSheetConfigResponse(
                 "バンド申請フォーム",
                 "出演情報、メンバー、演奏曲を入力してください。",
                 "送信する",
-                List.of(sectionBlock("section-band", "バンド基本情報", "バンド名、提出状況、備考を入力します。", bandFields)));
+                List.of(
+                        sectionBlock("section-band", "バンド基本情報", "バンド名、提出状況、備考を入力します。", bandFields),
+                        groupBlock("members", "出演者", "出演者と担当パートを入力します。", true, true, 1, "メンバー追加", "メンバー",
+                                "member-name", layoutFull(1), memberFields),
+                        groupBlock("songs", "演奏する曲", "曲名、使用パート、マイク設定を入力します。", true, true, 1, "曲を追加", "曲",
+                                "song-title", layoutFull(1), songFields)));
     }
 
     public SettingSheetConfigResponse readSettingSheetConfig(Live live) {
