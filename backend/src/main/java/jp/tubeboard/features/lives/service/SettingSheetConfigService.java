@@ -51,9 +51,9 @@ public class SettingSheetConfigService {
                 SettingSheetConstants.DEFAULT_SUBMIT_LABEL,
                 List.of(
                         sectionBlock("section-band", "バンド基本情報", "バンド名、提出状況、備考を入力します。"),
-                        textBlock("band-name", "バンド名", true, layoutHalf(1)),
+                        textBlock("band-name", "バンド名", true, layoutTwoThirds(1)),
                         selectBlock("submission-status", SettingSheetConstants.BLOCK_SINGLE_SELECT, "提出状況", true,
-                                List.of("未完成", "完成"), null, layoutHalf(1)),
+                                List.of("未完成", "完成"), null, layoutThird(1)),
                         longTextBlock("detail", "備考", false, layoutFull(1)),
                         groupBlock("members", "出演者", "出演者と担当パートを入力します。", true, true, 1, "メンバー追加", "メンバー",
                                 "member-name", layoutFull(1), memberFields),
@@ -278,6 +278,14 @@ public class SettingSheetConfigService {
 
     private LayoutResponse layoutHalf(int optionColumns) {
         return new LayoutResponse(SettingSheetConstants.LAYOUT_HALF, optionColumns, false);
+    }
+
+    private LayoutResponse layoutTwoThirds(int optionColumns) {
+        return new LayoutResponse(SettingSheetConstants.LAYOUT_TWO_THIRDS, optionColumns, false);
+    }
+
+    private LayoutResponse layoutThird(int optionColumns) {
+        return new LayoutResponse(SettingSheetConstants.LAYOUT_THIRD, optionColumns, false);
     }
 
     private String safeText(String value) {

@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jp.tubeboard.common.exception.BadRequestException;
 import jp.tubeboard.features.auth.User;
 import jp.tubeboard.features.auth.UserService;
 import jp.tubeboard.features.lives.dto.request.LiveCreateRequest;
@@ -87,19 +86,13 @@ public class LivesService implements ILivesService {
 
     @Override
     public LiveResponse get(UUID id) {
-        User currentUser = userService.getCurrentUser();
-        Live live = liveRepository.findByIdAndTenantUserIdAndDeletedAtIsNull(id, currentUser.getId())
-                .orElseThrow(() -> new LivesNotFoundException("ライブが見つかりません"));
-
-        return toResponse(live);
+        return toResponse(findOwnedLive(id));
     }
 
     @Override
     @Transactional
     public LiveResponse update(LiveUpdateRequest request) {
-        User currentUser = userService.getCurrentUser();
-        Live live = liveRepository.findByIdAndTenantUserIdAndDeletedAtIsNull(request.id(), currentUser.getId())
-                .orElseThrow(() -> new LivesNotFoundException("ライブが見つかりません"));
+        Live live = findOwnedLive(request.id());
 
         live.setName(request.name());
         live.setDate(request.date());
@@ -118,9 +111,7 @@ public class LivesService implements ILivesService {
     @Override
     @Transactional
     public void delete(UUID id) {
-        User currentUser = userService.getCurrentUser();
-        Live live = liveRepository.findByIdAndTenantUserIdAndDeletedAtIsNull(id, currentUser.getId())
-                .orElseThrow(() -> new LivesNotFoundException("ライブが見つかりません"));
+        Live live = findOwnedLive(id);
 
         live.markDeleted();
         liveRepository.save(live);
@@ -142,19 +133,13 @@ public class LivesService implements ILivesService {
 
     @Override
     public SettingSheetConfigResponse getSettingSheetConfig(UUID id) {
-        User currentUser = userService.getCurrentUser();
-        Live live = liveRepository.findByIdAndTenantUserIdAndDeletedAtIsNull(id, currentUser.getId())
-                .orElseThrow(() -> new LivesNotFoundException("ライブが見つかりません"));
-
-        return settingSheetConfigService.readSettingSheetConfig(live);
+        return settingSheetConfigService.readSettingSheetConfig(findOwnedLive(id));
     }
 
     @Override
     @Transactional
     public SettingSheetConfigResponse updateSettingSheetConfig(UUID id, SettingSheetConfigUpdateRequest request) {
-        User currentUser = userService.getCurrentUser();
-        Live live = liveRepository.findByIdAndTenantUserIdAndDeletedAtIsNull(id, currentUser.getId())
-                .orElseThrow(() -> new LivesNotFoundException("ライブが見つかりません"));
+        Live live = findOwnedLive(id);
 
         SettingSheetConfigResponse normalized = settingSheetConfigService.normalizeSettingSheetConfig(request);
         live.setSettingsJson(settingSheetConfigService.writeSettingSheetConfig(normalized));
@@ -168,26 +153,7 @@ public class LivesService implements ILivesService {
             PublicSettingSheetSubmissionRequest request) {
         Live live = liveRepository.findByPublicTokenAndDeletedAtIsNull(publicToken)
                 .orElseThrow(() -> new LivesNotFoundException("公開ライブが見つかりません"));
-
-        PublicSettingSheetSubmissionRequest normalizedRequest = settingSheetSubmissionService
-                .normalizeSubmissionRequest(request);
-        SettingSheetConfigResponse config = settingSheetConfigService.readSettingSheetConfig(live);
-        settingSheetSubmissionService.validateSubmission(normalizedRequest, config);
-        String summary = settingSheetSubmissionService.resolveSubmissionSummary(config, normalizedRequest,
-                live.getName());
-
-        SettingSheetSubmission saved = settingSheetSubmissionRepository.save(SettingSheetSubmission.builder()
-                .live(live)
-                .bandName(summary)
-                .submissionStatus(SettingSheetConstants.SUBMISSION_STATUS)
-                .payloadJson(settingSheetSubmissionService.writeSubmissionPayload(normalizedRequest))
-                .build());
-
-        return new SettingSheetSubmissionResponse(
-                saved.getId(),
-                saved.getBandName(),
-                saved.getSubmissionStatus(),
-                saved.getCreatedAt());
+        return saveSubmission(live, request, null);
     }
 
     @Override
@@ -210,26 +176,7 @@ public class LivesService implements ILivesService {
             UUID submissionId,
             PublicSettingSheetSubmissionRequest request) {
         SettingSheetSubmission submission = findPublicSubmission(publicToken, submissionId);
-
-        PublicSettingSheetSubmissionRequest normalizedRequest = settingSheetSubmissionService
-                .normalizeSubmissionRequest(request);
-        SettingSheetConfigResponse config = settingSheetConfigService.readSettingSheetConfig(submission.getLive());
-        settingSheetSubmissionService.validateSubmission(normalizedRequest, config);
-        String summary = settingSheetSubmissionService.resolveSubmissionSummary(
-                config,
-                normalizedRequest,
-                submission.getLive().getName());
-
-        submission.setBandName(summary);
-        submission.setSubmissionStatus(SettingSheetConstants.SUBMISSION_STATUS);
-        submission.setPayloadJson(settingSheetSubmissionService.writeSubmissionPayload(normalizedRequest));
-
-        SettingSheetSubmission saved = settingSheetSubmissionRepository.save(submission);
-        return new SettingSheetSubmissionResponse(
-                saved.getId(),
-                saved.getBandName(),
-                saved.getSubmissionStatus(),
-                saved.getCreatedAt());
+        return saveSubmission(submission.getLive(), request, submission);
     }
 
     private Tenants findTenant(UUID tenantId, Long userId) {
@@ -241,10 +188,36 @@ public class LivesService implements ILivesService {
         return status == null ? LiveStatus.DRAFT : status;
     }
 
+    private Live findOwnedLive(UUID id) {
+        User currentUser = userService.getCurrentUser();
+        return liveRepository.findByIdAndTenantUserIdAndDeletedAtIsNull(id, currentUser.getId())
+                .orElseThrow(() -> new LivesNotFoundException("ライブが見つかりません"));
+    }
+
     private SettingSheetSubmission findPublicSubmission(String publicToken, UUID submissionId) {
         return settingSheetSubmissionRepository
                 .findByIdAndLivePublicTokenAndLiveDeletedAtIsNull(submissionId, publicToken)
                 .orElseThrow(() -> new LivesNotFoundException("提出済みセッティングシートが見つかりません"));
+    }
+
+    private SettingSheetSubmissionResponse saveSubmission(Live live,
+            PublicSettingSheetSubmissionRequest request,
+            SettingSheetSubmission submission) {
+        PublicSettingSheetSubmissionRequest normalizedRequest = settingSheetSubmissionService
+                .normalizeSubmissionRequest(request);
+        SettingSheetConfigResponse config = settingSheetConfigService.readSettingSheetConfig(live);
+        settingSheetSubmissionService.validateSubmission(normalizedRequest, config);
+        String summary = settingSheetSubmissionService.resolveSubmissionSummary(config, normalizedRequest,
+                live.getName());
+
+        SettingSheetSubmission target = submission == null
+                ? SettingSheetSubmission.builder().live(live).build()
+                : submission;
+        target.setBandName(summary);
+        target.setSubmissionStatus(SettingSheetConstants.SUBMISSION_STATUS);
+        target.setPayloadJson(settingSheetSubmissionService.writeSubmissionPayload(normalizedRequest));
+
+        return toSubmissionResponse(settingSheetSubmissionRepository.save(target));
     }
 
     private LiveResponse toResponse(Live live) {
@@ -258,5 +231,13 @@ public class LivesService implements ILivesService {
                 live.getLocation(),
                 live.getDeadlineAt(),
                 live.getStatus());
+    }
+
+    private SettingSheetSubmissionResponse toSubmissionResponse(SettingSheetSubmission submission) {
+        return new SettingSheetSubmissionResponse(
+                submission.getId(),
+                submission.getBandName(),
+                submission.getSubmissionStatus(),
+                submission.getCreatedAt());
     }
 }
