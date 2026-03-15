@@ -18,7 +18,7 @@ import jp.tubeboard.features.lives.dto.request.LiveUpdateRequest;
 import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest;
 import jp.tubeboard.features.lives.dto.response.LiveResponse;
 import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse;
-import jp.tubeboard.features.lives.service.interfaces.ILivesService;
+import jp.tubeboard.features.lives.service.crud.ILivesService;
 import lombok.AllArgsConstructor;
 
 @RestController

@@ -16,7 +16,7 @@ import jp.tubeboard.features.lives.dto.request.PublicSettingSheetSubmissionReque
 import jp.tubeboard.features.lives.dto.response.PublicLiveResponse;
 import jp.tubeboard.features.lives.dto.response.PublicSettingSheetSubmissionDetailResponse;
 import jp.tubeboard.features.lives.dto.response.SettingSheetSubmissionResponse;
-import jp.tubeboard.features.lives.service.interfaces.ILivesService;
+import jp.tubeboard.features.lives.service.crud.ILivesService;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -27,13 +27,14 @@ public class PublicLivesController {
     private final ILivesService livesService;
 
     @GetMapping("/{publicToken}")
-    public ResponseEntity<PublicLiveResponse> findByPublicToken(@PathVariable(name="publicToken") String publicToken) {
+    public ResponseEntity<PublicLiveResponse> findByPublicToken(
+            @PathVariable(name = "publicToken") String publicToken) {
         return ResponseEntity.ok(livesService.findPublicLive(publicToken));
     }
 
     @PostMapping("/{publicToken}/setting-sheet/submissions")
     public ResponseEntity<SettingSheetSubmissionResponse> submit(
-            @PathVariable(name="publicToken") String publicToken,
+            @PathVariable(name = "publicToken") String publicToken,
             @RequestBody @Valid PublicSettingSheetSubmissionRequest request) {
         return ResponseEntity.ok(livesService.submitPublicSettingSheet(publicToken, request));
     }
