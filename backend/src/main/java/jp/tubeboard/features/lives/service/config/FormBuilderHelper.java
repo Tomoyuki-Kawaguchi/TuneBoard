@@ -2,6 +2,8 @@ package jp.tubeboard.features.lives.service.config;
 
 import java.util.List;
 
+import org.springframework.stereotype.Component;
+
 import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest.LayoutRequest;
 import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest.OptionSourceRequest;
 import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse.FormBlockResponse;
@@ -9,6 +11,7 @@ import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse.Layou
 import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse.OptionSourceResponse;
 import jp.tubeboard.features.lives.service.SettingSheetConstants;
 
+@Component
 public class FormBuilderHelper {
     public String normalizeBlockType(String value) {
         String normalized = safeText(value).toUpperCase();
