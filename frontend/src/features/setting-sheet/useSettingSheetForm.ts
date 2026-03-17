@@ -54,6 +54,7 @@ export function useSettingSheetForm({ publicToken, live, submission, onSubmitted
 
   useEffect(() => {
     const draft = window.localStorage.getItem(storageKey);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormValues(draft ? parseSettingSheetDraft(draft, settingSheetConfig.blocks).values : initialValues);
   }, [initialValues, settingSheetConfig.blocks, storageKey]);
 
