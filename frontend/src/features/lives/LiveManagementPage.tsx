@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { CalendarDays, ChevronLeft, Link2, MapPin, Settings2 } from 'lucide-react';
+import { CalendarDays, ChevronLeft, Link2, MapPin, Settings2, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -13,7 +13,14 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { buildPublicLiveUrl, formatDeadline, formatLiveDate, formatOptionalText, LIVE_STATUS_LABELS, type LiveResponse } from './types/type';
+import {
+  buildPublicLiveUrl,
+  formatDeadline,
+  formatLiveDate,
+  formatOptionalText,
+  LIVE_STATUS_LABELS,
+  type LiveResponse,
+} from './types/type';
 import { apiClient } from '@/lib/api/client';
 import { Badge } from '@/components/ui/badge';
 
@@ -27,11 +34,10 @@ export const LiveManagementPage = () => {
       return;
     }
 
-    apiClient
-      .get<LiveResponse>(`/lives/${liveId}`)
-      .then((response) => {
-        if (response) {
-          setLive(response);
+    apiClient.get<LiveResponse>(`/lives/${liveId}`)
+      .then((liveResponse) => {
+        if (liveResponse) {
+          setLive(liveResponse);
         }
       })
       .catch(() => {
@@ -134,12 +140,19 @@ export const LiveManagementPage = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>フォーム構成は別ページのビルダーで自由に組み立てます。現在の高機能バンド申請フォームもテンプレートとして適用できます。</p>
           <div className="flex gap-2">
             <Button asChild variant="outline">
               <a href={publicUrl} target="_blank" rel="noreferrer">
                 <Link2 className="size-4" />
                 公開フォームを開く
               </a>
+            </Button>
+            <Button asChild>
+              <Link to={`/tenants/${tenantId}/lives/${liveId}/form`}>
+                <Wrench className="size-4" />
+                ライブフォーム作成
+              </Link>
             </Button>
           </div>
         </CardContent>

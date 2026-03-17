@@ -1,20 +1,30 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/features/auth/AuthProvider';
 import { Layout } from '@/features/layout/Layout';
-import { Login } from '@/pages/Login';
 import { RequireAuth } from '@/features/auth/RequireAuth';
-import { TenantsPage } from './features/tenants/TenantsPage';
-import { PublicLivePage } from './pages/public/PublicLivePage';
-import { TenantLivesPage } from './features/lives/TenantLivesPage';
-import { LiveManagementPage } from './features/lives/LiveManagementPage';
+
+const Login = lazy(() => import('@/pages/Login').then((module) => ({ default: module.Login })));
+const PublicLivePage = lazy(() => import('@/pages/public/PublicLivePage').then((module) => ({ default: module.PublicLivePage })));
+const TenantsPage = lazy(() => import('./features/tenants/TenantsPage').then((module) => ({ default: module.TenantsPage })));
+const TenantLivesPage = lazy(() => import('./features/lives/TenantLivesPage').then((module) => ({ default: module.TenantLivesPage })));
+const LiveManagementPage = lazy(() => import('./features/lives/LiveManagementPage').then((module) => ({ default: module.LiveManagementPage })));
+const LiveFormEditorPage = lazy(() => import('./features/lives/LiveFormEditorPage').then((module) => ({ default: module.LiveFormEditorPage })));
+
+const routeFallback = (
+  <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
+    読み込み中...
+  </div>
+);
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/public/lives/:publicToken" element={<PublicLivePage />} />
+          <Route path="/login" element={<Suspense fallback={routeFallback}><Login /></Suspense>} />
+          <Route path="/public/lives/:publicToken" element={<Suspense fallback={routeFallback}><PublicLivePage /></Suspense>} />
+          <Route path="/public/lives/:publicToken/submissions/:submissionId" element={<Suspense fallback={routeFallback}><PublicLivePage /></Suspense>} />
           <Route
             path="/"
             element={
@@ -24,9 +34,10 @@ function App() {
             }
           >
             <Route index element={<Navigate to="tenants" replace />} />
-            <Route path="tenants" element={<TenantsPage />} />
-            <Route path="tenants/:tenantId/lives" element={<TenantLivesPage />} />
-            <Route path="tenants/:tenantId/lives/:liveId" element={<LiveManagementPage />} />
+            <Route path="tenants" element={<Suspense fallback={routeFallback}><TenantsPage /></Suspense>} />
+            <Route path="tenants/:tenantId/lives" element={<Suspense fallback={routeFallback}><TenantLivesPage /></Suspense>} />
+            <Route path="tenants/:tenantId/lives/:liveId" element={<Suspense fallback={routeFallback}><LiveManagementPage /></Suspense>} />
+            <Route path="tenants/:tenantId/lives/:liveId/form" element={<Suspense fallback={routeFallback}><LiveFormEditorPage /></Suspense>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
