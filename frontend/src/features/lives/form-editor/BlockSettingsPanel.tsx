@@ -146,6 +146,12 @@ export const BlockSettingsPanel = ({
                   今はこのブロックを公開フォームで非表示にする
                 </div>
               </div>
+              <div className="lg:col-span-2 rounded-xl border bg-muted/30 p-3">
+                <div className="flex items-center gap-3 text-sm">
+                  <Checkbox checked={block.publicVisible === true} onCheckedChange={(checked) => onUpdateBlock(block.id, { publicVisible: checked === true })} />
+                  提出共有リンクでこの項目を表示する
+                </div>
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>

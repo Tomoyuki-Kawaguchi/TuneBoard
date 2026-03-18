@@ -75,6 +75,7 @@ public class SettingSheetConfigService {
                                 "バンド申請フォーム",
                                 "出演情報、メンバー、演奏曲を入力してください。",
                                 "送信する",
+                                true,
                                 List.of(
                                                 formBuilderHelper.sectionBlock("section-band", "バンド基本情報",
                                                                 "バンド名、提出状況、備考を入力します。", bandFields),
@@ -97,11 +98,18 @@ public class SettingSheetConfigService {
                 try {
                         SettingSheetConfigResponse parsed = objectMapper.readValue(live.getSettingsJson(),
                                         SettingSheetConfigResponse.class);
-                        return normalizeSettingSheetConfig(new SettingSheetConfigUpdateRequest(
-                                        parsed.title(),
-                                        parsed.description(),
-                                        parsed.submitButtonLabel(),
-                                        helper.mapToFormBlockRequests(parsed.blocks())));
+                        SettingSheetConfigResponse defaults = defaultSettingSheetConfig();
+                        return new SettingSheetConfigResponse(
+                                        formBuilderHelper.safeTextOrDefault(parsed.title(), defaults.title()),
+                                        formBuilderHelper.safeTextOrDefault(parsed.description(),
+                                                        defaults.description()),
+                                        formBuilderHelper.safeTextOrDefault(parsed.submitButtonLabel(),
+                                                        defaults.submitButtonLabel()),
+                                        parsed.publicSubmissionEnabled() == null
+                                                        ? defaults.publicSubmissionEnabled()
+                                                        : parsed.publicSubmissionEnabled(),
+                                        helper.normalizeBlocks(helper.mapToFormBlockRequests(parsed.blocks()),
+                                                        defaults));
                 } catch (JsonProcessingException ex) {
                         return defaultSettingSheetConfig();
                 }
@@ -116,10 +124,26 @@ public class SettingSheetConfigService {
         }
 
         public SettingSheetConfigResponse normalizeSettingSheetConfig(SettingSheetConfigUpdateRequest request) {
+                SettingSheetConfigResponse defaults = defaultSettingSheetConfig();
+                Boolean publicSubmissionEnabled = resolvePublicSubmissionEnabled(request,
+                                defaults.publicSubmissionEnabled());
                 return new SettingSheetConfigResponse(
                                 formBuilderHelper.safeTextOrDefault(request.title(), "バンド申請フォーム"),
                                 formBuilderHelper.safeTextOrDefault(request.description(), "出演情報、メンバー、演奏曲を入力してください。"),
                                 formBuilderHelper.safeTextOrDefault(request.submitButtonLabel(), "送信する"),
-                                helper.normalizeBlocks(request.blocks(), defaultSettingSheetConfig()));
+                                publicSubmissionEnabled,
+                                helper.normalizeBlocks(request.blocks(), defaults));
+        }
+
+        private Boolean resolvePublicSubmissionEnabled(SettingSheetConfigUpdateRequest request, Boolean fallback) {
+                try {
+                        Object value = request.getClass().getMethod("publicSubmissionEnabled").invoke(request);
+                        if (value instanceof Boolean booleanValue) {
+                                return booleanValue;
+                        }
+                } catch (ReflectiveOperationException ignored) {
+                        return fallback;
+                }
+                return fallback;
         }
 }

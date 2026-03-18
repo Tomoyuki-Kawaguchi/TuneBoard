@@ -55,6 +55,14 @@ public class LiveServiceHelper {
                                 .orElseThrow(() -> new LivesNotFoundException("提出済みセッティングシートが見つかりません"));
         }
 
+        public SettingSheetSubmission findOwnedSubmission(UUID liveId, UUID submissionId) {
+                User currentUser = userService.getCurrentUser();
+                return settingSheetSubmissionRepository
+                                .findByIdAndLiveIdAndLiveTenantUserIdAndLiveDeletedAtIsNull(submissionId, liveId,
+                                                currentUser.getId())
+                                .orElseThrow(() -> new LivesNotFoundException("提出済みセッティングシートが見つかりません"));
+        }
+
         public SettingSheetSubmissionResponse saveSubmission(Live live,
                         PublicSettingSheetSubmissionRequest request,
                         SettingSheetSubmission submission) {

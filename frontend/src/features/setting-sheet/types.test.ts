@@ -8,6 +8,7 @@ const configWithHiddenSection: SettingSheetConfigResponse = {
   title: 'test',
   description: '',
   submitButtonLabel: '送信',
+  publicSubmissionEnabled: false,
   blocks: [
     {
       id: 'section-1',
@@ -104,6 +105,7 @@ describe('setting-sheet types', () => {
       title: 'test',
       description: '',
       submitButtonLabel: '送信',
+      publicSubmissionEnabled: false,
       blocks: [
         {
           id: 'members',

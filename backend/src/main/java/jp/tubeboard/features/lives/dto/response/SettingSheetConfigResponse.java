@@ -6,6 +6,7 @@ public record SettingSheetConfigResponse(
                 String title,
                 String description,
                 String submitButtonLabel,
+                Boolean publicSubmissionEnabled,
                 List<FormBlockResponse> blocks) {
 
         public record FormBlockResponse(
@@ -14,6 +15,7 @@ public record SettingSheetConfigResponse(
                         String label,
                         String description,
                         Boolean hidden,
+                        Boolean publicVisible,
                         Boolean required,
                         Boolean collapsible,
                         String appearance,

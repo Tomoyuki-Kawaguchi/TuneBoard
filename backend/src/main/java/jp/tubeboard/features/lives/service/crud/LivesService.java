@@ -21,6 +21,7 @@ import jp.tubeboard.features.lives.exception.LivesNotFoundException;
 import jp.tubeboard.features.lives.model.Live;
 import jp.tubeboard.features.lives.model.SettingSheetSubmission;
 import jp.tubeboard.features.lives.repository.LiveRepository;
+import jp.tubeboard.features.lives.repository.SettingSheetSubmissionRepository;
 import jp.tubeboard.features.lives.service.SettingSheetSubmissionService;
 import jp.tubeboard.features.lives.service.config.SettingSheetConfigService;
 import jp.tubeboard.features.tenants.model.Tenants;
@@ -35,6 +36,7 @@ public class LivesService implements ILivesService {
     private final UserService userService;
     private final SettingSheetConfigService settingSheetConfigService;
     private final SettingSheetSubmissionService settingSheetSubmissionService;
+    private final SettingSheetSubmissionRepository settingSheetSubmissionRepository;
 
     private final LiveServiceHelper helper;
 
@@ -159,6 +161,33 @@ public class LivesService implements ILivesService {
     }
 
     @Override
+    public List<SettingSheetSubmissionResponse> listOwnedSettingSheetSubmissions(UUID liveId) {
+        User currentUser = userService.getCurrentUser();
+        helper.findOwnedLive(liveId);
+
+        return settingSheetSubmissionRepository
+                .findAllByLiveIdAndLiveTenantUserIdAndLiveDeletedAtIsNullOrderByCreatedAtDesc(liveId,
+                        currentUser.getId())
+                .stream()
+                .map(helper::toSubmissionResponse)
+                .toList();
+    }
+
+    @Override
+    public PublicSettingSheetSubmissionDetailResponse getOwnedSettingSheetSubmission(UUID liveId,
+            UUID submissionId) {
+        SettingSheetSubmission submission = helper.findOwnedSubmission(liveId, submissionId);
+        PublicSettingSheetSubmissionRequest payload = settingSheetSubmissionService.readSubmissionPayload(
+                submission.getPayloadJson());
+        return new PublicSettingSheetSubmissionDetailResponse(
+                submission.getId(),
+                submission.getBandName(),
+                submission.getSubmissionStatus(),
+                submission.getCreatedAt(),
+                settingSheetSubmissionService.mapFieldAnswers(payload.answers()));
+    }
+
+    @Override
     public PublicSettingSheetSubmissionDetailResponse getPublicSettingSheetSubmission(String publicToken,
             UUID submissionId) {
         SettingSheetSubmission submission = helper.findPublicSubmission(publicToken, submissionId);
@@ -170,6 +199,58 @@ public class LivesService implements ILivesService {
                 submission.getSubmissionStatus(),
                 submission.getCreatedAt(),
                 settingSheetSubmissionService.mapFieldAnswers(payload.answers()));
+    }
+
+    @Override
+    public PublicSettingSheetSubmissionDetailResponse getPublicSharedSettingSheetSubmission(String publicToken,
+            UUID submissionId) {
+        SettingSheetSubmission submission = helper.findPublicSubmission(publicToken, submissionId);
+        SettingSheetConfigResponse config = settingSheetConfigService.readSettingSheetConfig(submission.getLive());
+        if (!Boolean.TRUE.equals(config.publicSubmissionEnabled())) {
+            throw new LivesNotFoundException("共有提出データは公開されていません");
+        }
+        PublicSettingSheetSubmissionRequest payload = settingSheetSubmissionService.readSubmissionPayload(
+                submission.getPayloadJson());
+        PublicSettingSheetSubmissionRequest sharedPayload = settingSheetSubmissionService
+                .filterAnswersForSharedPublicView(
+                        payload,
+                        config);
+
+        return new PublicSettingSheetSubmissionDetailResponse(
+                submission.getId(),
+                submission.getBandName(),
+                submission.getSubmissionStatus(),
+                submission.getCreatedAt(),
+                settingSheetSubmissionService.mapFieldAnswers(sharedPayload.answers()));
+    }
+
+    @Override
+    public List<PublicSettingSheetSubmissionDetailResponse> listPublicSharedSettingSheetSubmissions(
+            String publicToken) {
+        Live live = liveRepository.findByPublicTokenAndDeletedAtIsNull(publicToken)
+                .orElseThrow(() -> new LivesNotFoundException("公開ライブが見つかりません"));
+
+        SettingSheetConfigResponse config = settingSheetConfigService.readSettingSheetConfig(live);
+        if (!Boolean.TRUE.equals(config.publicSubmissionEnabled())) {
+            throw new LivesNotFoundException("共有提出データは公開されていません");
+        }
+
+        return settingSheetSubmissionRepository
+                .findAllByLivePublicTokenAndLiveDeletedAtIsNullOrderByCreatedAtDesc(publicToken)
+                .stream()
+                .map(submission -> {
+                    PublicSettingSheetSubmissionRequest payload = settingSheetSubmissionService
+                            .readSubmissionPayload(submission.getPayloadJson());
+                    PublicSettingSheetSubmissionRequest sharedPayload = settingSheetSubmissionService
+                            .filterAnswersForSharedPublicView(payload, config);
+                    return new PublicSettingSheetSubmissionDetailResponse(
+                            submission.getId(),
+                            submission.getBandName(),
+                            submission.getSubmissionStatus(),
+                            submission.getCreatedAt(),
+                            settingSheetSubmissionService.mapFieldAnswers(sharedPayload.answers()));
+                })
+                .toList();
     }
 
     @Override

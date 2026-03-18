@@ -44,6 +44,7 @@ const baseLive: PublicLiveResponse = {
     title: 'バンド申請フォーム',
     description: '',
     submitButtonLabel: '送信する',
+    publicSubmissionEnabled: false,
     blocks: [
       {
         id: 'band-name',
@@ -168,6 +169,7 @@ describe('SettingSheetForm', () => {
         title: '出演者フォーム',
         description: '',
         submitButtonLabel: '更新する',
+        publicSubmissionEnabled: false,
         blocks: [
           {
             id: 'members',

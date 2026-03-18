@@ -80,6 +80,46 @@ public class SettingSheetSubmissionService {
                 .toList();
     }
 
+    public PublicSettingSheetSubmissionRequest filterAnswersForSharedPublicView(
+            PublicSettingSheetSubmissionRequest request,
+            SettingSheetConfigResponse config) {
+        return new PublicSettingSheetSubmissionRequest(
+                filterAnswers(config.blocks(), request.answers()));
+    }
+
+    private List<FieldAnswerRequest> filterAnswers(List<FormBlockResponse> blocks, List<FieldAnswerRequest> answers) {
+        Map<String, FieldAnswerRequest> answerMap = toAnswerMap(answers);
+        List<FieldAnswerRequest> filtered = new java.util.ArrayList<>();
+
+        for (FormBlockResponse block : blocks) {
+            if (Boolean.TRUE.equals(block.hidden())) {
+                continue;
+            }
+
+            if (SettingSheetConstants.BLOCK_SECTION.equals(block.type())) {
+                filtered.addAll(filterAnswers(block.fields(), answers));
+                continue;
+            }
+
+            if (!Boolean.TRUE.equals(block.publicVisible())) {
+                continue;
+            }
+
+            FieldAnswerRequest answer = answerMap.getOrDefault(block.id(), emptyAnswer(block.id()));
+            if (SettingSheetConstants.BLOCK_REPEATABLE_GROUP.equals(block.type())) {
+                List<GroupItemRequest> items = answer.items().stream()
+                        .map(item -> new GroupItemRequest(filterAnswers(block.fields(), item.answers())))
+                        .toList();
+                filtered.add(new FieldAnswerRequest(block.id(), List.of(), items));
+                continue;
+            }
+
+            filtered.add(new FieldAnswerRequest(block.id(), answer.values(), List.of()));
+        }
+
+        return List.copyOf(filtered);
+    }
+
     private void validateAnswers(List<FormBlockResponse> blocks,
             List<FieldAnswerRequest> answers,
             String pathPrefix,
