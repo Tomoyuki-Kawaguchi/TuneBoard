@@ -45,6 +45,7 @@ const baseLive: PublicLiveResponse = {
     description: '',
     submitButtonLabel: '送信する',
     publicSubmissionEnabled: false,
+    mainDisplayFieldId: 'band-name',
     blocks: [
       {
         id: 'band-name',
@@ -170,6 +171,7 @@ describe('SettingSheetForm', () => {
         description: '',
         submitButtonLabel: '更新する',
         publicSubmissionEnabled: false,
+        mainDisplayFieldId: 'member-name',
         blocks: [
           {
             id: 'members',
@@ -273,5 +275,82 @@ describe('SettingSheetForm', () => {
     render(<SettingSheetForm publicToken="public-token" live={live} submission={submission} />);
 
     expect(await screen.findByDisplayValue('Alice')).toBeInTheDocument();
+  });
+
+  it('BOOLEAN 項目はスイッチ操作で true を送信できる', async () => {
+    const live: PublicLiveResponse = {
+      ...baseLive,
+      settingSheetConfig: {
+        ...baseLive.settingSheetConfig,
+        blocks: [
+          ...baseLive.settingSheetConfig.blocks,
+          {
+            id: 'is-bring-amp',
+            type: 'BOOLEAN',
+            label: 'アンプ持ち込み',
+            description: '',
+            hidden: false,
+            required: true,
+            collapsible: false,
+            appearance: 'outline',
+            itemAppearance: 'plain',
+            options: [],
+            minItems: 0,
+            addButtonLabel: '',
+            entryTitle: '',
+            titleSourceFieldId: '',
+            fields: [],
+            layout: {
+              width: 'half',
+              optionColumns: 1,
+              optionFitContent: false,
+            },
+            optionSource: null,
+          },
+        ],
+      },
+    };
+
+    mockPost.mockResolvedValue({
+      id: 'submission-bool',
+      bandName: 'The Testers',
+      submissionStatus: 'SUBMITTED',
+      submittedAt: '2026-03-11T20:00:00',
+    });
+
+    render(<SettingSheetForm publicToken="public-token" live={live} submission={null} />);
+
+    await userEvent.type(screen.getByRole('textbox', { name: /バンド名/ }), 'The Testers');
+  await userEvent.click(screen.getByRole('switch', { name: /アンプ持ち込み/ }));
+    await userEvent.click(screen.getByRole('button', { name: '送信する' }));
+
+    await waitFor(() => {
+      expect(mockPost).toHaveBeenCalledWith('/public/lives/public-token/setting-sheet/submissions', {
+        answers: [
+          {
+            fieldId: 'band-name',
+            values: ['The Testers'],
+            items: [],
+          },
+          {
+            fieldId: 'is-bring-amp',
+            values: ['true'],
+            items: [],
+          },
+        ],
+      });
+    });
+  });
+
+  it('締切済みライブでは送信ボタンが無効になる', () => {
+    const live: PublicLiveResponse = {
+      ...baseLive,
+      deadlineAt: '2020-01-01T00:00:00',
+    };
+
+    render(<SettingSheetForm publicToken="public-token" live={live} submission={null} />);
+
+    expect(screen.getByText('現在は送信できません')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '送信する' })).toBeDisabled();
   });
 });

@@ -35,6 +35,8 @@ interface BlockSettingsPanelProps {
   onChangeType: (blockId: string, nextType: SettingSheetBlock['type']) => void;
   onApplyGroupAppearance: (blockId: string, appearance: SettingSheetBlock['appearance']) => void;
   onUpdateOptionSource: (blockId: string, source: SettingSheetOptionSource | null) => void;
+  isMainDisplayField: boolean;
+  onSetMainDisplayFieldId: (fieldId: string) => void;
   renderNestedBlock: (child: SettingSheetBlock, childIndex: number, nestedParentId: string | null, nestedDepth: number) => ReactNode;
 }
 
@@ -47,11 +49,14 @@ export const BlockSettingsPanel = ({
   onChangeType,
   onApplyGroupAppearance,
   onUpdateOptionSource,
+  isMainDisplayField,
+  onSetMainDisplayFieldId,
   renderNestedBlock,
 }: BlockSettingsPanelProps) => {
   const usesOptions = isOptionBlock(block.type);
   const usesRequired = isInputBlock(block.type) || isRepeatableGroupBlock(block.type);
   const usesChildren = canContainBlocks(block.type);
+  const canUseAsMainDisplay = isInputBlock(block.type);
   const titleSourceCandidates = isRepeatableGroupBlock(block.type) ? collectTitleSourceCandidates(block.fields) : [];
   const sharedChildAppearance = resolveSharedChildAppearance(block);
 
@@ -152,6 +157,15 @@ export const BlockSettingsPanel = ({
                   提出共有リンクでこの項目を表示する
                 </div>
               </div>
+              {canUseAsMainDisplay ? (
+                <div className="lg:col-span-2 rounded-xl border bg-muted/30 p-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Checkbox checked={isMainDisplayField} onCheckedChange={(checked) => onSetMainDisplayFieldId(checked === true ? block.id : '')} />
+                    提出一覧の主表示項目にする
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">このラベルが提出一覧や共有一覧の先頭列見出しになります。</p>
+                </div>
+              ) : null}
             </div>
           </AccordionContent>
         </AccordionItem>

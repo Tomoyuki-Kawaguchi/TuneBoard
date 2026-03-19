@@ -64,7 +64,7 @@ export const FormEditorSidebar = ({
                   type="button"
                   variant="outline"
                   onClick={() => setConfig((current) => current
-                    ? { ...createEmptySettingSheetConfig(), title: current.title, description: current.description, submitButtonLabel: current.submitButtonLabel }
+                    ? { ...createEmptySettingSheetConfig(), title: current.title, description: current.description, submitButtonLabel: current.submitButtonLabel, publicSubmissionEnabled: current.publicSubmissionEnabled }
                     : createEmptySettingSheetConfig())}
                 >
                   <RotateCcw className="size-4" />

@@ -253,14 +253,16 @@ export const LiveFormEditorPage = () => {
             <BlockEditorTree
               blocks={config.blocks}
               rootBlocks={config.blocks}
+              mainDisplayFieldId={config.mainDisplayFieldId}
               optionSourceCandidates={optionSourceCandidates}
               onMove={(parentId, blockIndex, direction) => setConfig((current) => current ? { ...current, blocks: moveBlockTree(current.blocks, parentId, blockIndex, direction) } : current)}
-              onRemove={(blockId) => setConfig((current) => current ? { ...current, blocks: removeBlockTree(current.blocks, blockId) } : current)}
+              onRemove={(blockId) => setConfig((current) => current ? normalizeSettingSheetConfig({ ...current, blocks: removeBlockTree(current.blocks, blockId) }) : current)}
               onInsert={(parentId, insertIndex, type) => setConfig((current) => current ? normalizeSettingSheetConfig({ ...current, blocks: insertChildBlock(current.blocks, parentId, insertIndex, createBlockTemplate(type)) }) : current)}
               onUpdateBlock={updateBlock}
               onChangeType={(blockId, nextType) => setConfig((current) => current ? normalizeSettingSheetConfig({ ...current, blocks: updateBlockTree(current.blocks, blockId, (block) => convertBlockForType(block, nextType)) }) : current)}
               onApplyGroupAppearance={applyAppearanceToGroupFields}
               onUpdateOptionSource={(blockId, source) => updateBlock(blockId, { optionSource: source as SettingSheetOptionSource | null })}
+              onSetMainDisplayFieldId={(fieldId) => setConfig((current) => current ? { ...current, mainDisplayFieldId: fieldId } : current)}
             />
           </CardContent>
         </Card>

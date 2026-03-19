@@ -7,6 +7,7 @@ public record SettingSheetConfigResponse(
                 String description,
                 String submitButtonLabel,
                 Boolean publicSubmissionEnabled,
+                String mainDisplayFieldId,
                 List<FormBlockResponse> blocks) {
 
         public record FormBlockResponse(

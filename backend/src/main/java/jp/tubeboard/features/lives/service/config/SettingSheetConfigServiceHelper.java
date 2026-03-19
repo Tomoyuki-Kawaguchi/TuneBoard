@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest.FormBlockRequest;
 import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest.LayoutRequest;
 import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest.OptionSourceRequest;
+import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest;
 import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse;
 import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse.FormBlockResponse;
 import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse.OptionSourceResponse;
@@ -31,6 +32,38 @@ public class SettingSheetConfigServiceHelper {
                         normalizedBlocks.add(normalizeBlock(block, defaultConfig));
                 }
                 return List.copyOf(normalizedBlocks);
+        }
+
+        public String normalizeMainDisplayFieldId(String candidate, List<FormBlockResponse> blocks, String fallback) {
+                String normalized = formBuilderHelper.safeText(candidate);
+                if (normalized.isBlank()) {
+                        return "";
+                }
+                return hasDisplayCandidate(blocks, normalized) ? normalized : fallback;
+        }
+
+        public String normalizeMainDisplayFieldId(SettingSheetConfigUpdateRequest request,
+                        List<FormBlockResponse> blocks,
+                        String fallback) {
+                return normalizeMainDisplayFieldId(request.mainDisplayFieldId(), blocks, fallback);
+        }
+
+        private boolean hasDisplayCandidate(List<FormBlockResponse> blocks, String fieldId) {
+                for (FormBlockResponse block : blocks) {
+                        if (SettingSheetConstants.BLOCK_SECTION.equals(block.type())
+                                        || SettingSheetConstants.BLOCK_REPEATABLE_GROUP.equals(block.type())) {
+                                if (hasDisplayCandidate(block.fields(), fieldId)) {
+                                        return true;
+                                }
+                                continue;
+                        }
+
+                        if (block.id().equals(fieldId)
+                                        && SettingSheetConstants.VALUE_BLOCK_TYPES.contains(block.type())) {
+                                return true;
+                        }
+                }
+                return false;
         }
 
         public FormBlockResponse normalizeBlock(FormBlockRequest block, SettingSheetConfigResponse defaultConfig) {

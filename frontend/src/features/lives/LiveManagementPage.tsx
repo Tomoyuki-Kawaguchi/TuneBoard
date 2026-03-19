@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { CalendarDays, ChevronLeft, Copy, ExternalLink, FileCheck2, Link2, MapPin, Settings2, Wrench } from 'lucide-react';
+import { CalendarDays, ChevronLeft, Copy, ExternalLink, FileCheck2, Link2, MapPin, Search, Settings2, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -13,7 +13,10 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   buildPublicLiveUrl,
   formatDeadline,
@@ -34,6 +37,7 @@ export const LiveManagementPage = () => {
   const [config, setConfig] = useState<SettingSheetConfigResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingVisibility, setIsSavingVisibility] = useState(false);
+  const [filterQuery, setFilterQuery] = useState('');
 
   useEffect(() => {
     if (!liveId) {
@@ -76,6 +80,13 @@ export const LiveManagementPage = () => {
   const publicSubmissionListUrl = `${window.location.origin}/public/lives/${live.publicToken}/submissions/shared`;
   const badgeVariant = live.status === 'CLOSED' ? 'destructive' : live.status === 'PUBLISHED' ? 'default' : 'secondary';
   const visibilityTargets = config ? flattenVisibilityTargets(config.blocks) : [];
+  const filteredTargets = visibilityTargets.filter((target) => {
+    const query = filterQuery.trim().toLowerCase();
+    if (!query) {
+      return true;
+    }
+    return target.label.toLowerCase().includes(query) || target.path.toLowerCase().includes(query);
+  });
 
   const updateTargetVisibility = (blockId: string, field: 'publicVisible' | 'hidden', nextValue: boolean) => {
     setConfig((current) => {
@@ -199,7 +210,6 @@ export const LiveManagementPage = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>フォーム構成は別ページのビルダーで自由に組み立てます。現在の高機能バンド申請フォームもテンプレートとして適用できます。</p>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
               <a href={publicUrl} target="_blank" rel="noreferrer">
@@ -219,61 +229,101 @@ export const LiveManagementPage = () => {
                 提出確認
               </Link>
             </Button>
-            <Button asChild variant="outline">
-              <a href={publicSubmissionListUrl} target="_blank" rel="noreferrer">
+            {config?.publicSubmissionEnabled === true ? (
+              <Button asChild variant="outline">
+                <a href={publicSubmissionListUrl} target="_blank" rel="noreferrer">
+                  <ExternalLink className="size-4" />
+                  共有提出一覧を開く
+                </a>
+              </Button>
+            ) : (
+              <Button variant="outline" disabled>
                 <ExternalLink className="size-4" />
                 共有提出一覧を開く
-              </a>
-            </Button>
-            <Button variant="outline" onClick={copySharedListLink}>
+              </Button>
+            )}
+            <Button variant="outline" onClick={copySharedListLink} disabled={config?.publicSubmissionEnabled !== true}>
               <Copy className="size-4" />
               共有提出一覧リンクをコピー
             </Button>
           </div>
+          {config?.publicSubmissionEnabled !== true ? <p className="text-xs text-muted-foreground">共有提出一覧は現在非公開です。下の「提出済みデータを公開する」をONにすると利用できます。</p> : null}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold">公開・非表示設定</h2>
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">公開・非表示設定</h2>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="rounded-md border p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium">提出済みデータを公開する</p>
-                <p className="text-xs text-muted-foreground">OFF の場合、共有提出一覧ページは非公開になります。</p>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_260px]">
+            <div className="rounded-lg border">
+              <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium">提出済みデータを公開する</p>
+                </div>
+                <Switch checked={config?.publicSubmissionEnabled === true} onCheckedChange={togglePublicSubmissionEnabled} />
               </div>
-              <Switch checked={config?.publicSubmissionEnabled === true} onCheckedChange={togglePublicSubmissionEnabled} />
+            </div>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" />
+              <Input value={filterQuery} onChange={(event) => setFilterQuery(event.target.value)} className="pl-9" placeholder="項目名で絞り込み" />
             </div>
           </div>
-          <div className="space-y-2">
-            {visibilityTargets.length === 0 ? (
-              <p className="text-sm text-muted-foreground">表示対象の項目がありません。</p>
-            ) : visibilityTargets.map((target) => (
-              <div key={target.id} className="space-y-2 rounded-md border px-3 py-2">
-                <div>
-                  <p className="text-sm font-medium">{target.label}</p>
-                  <p className="text-xs text-muted-foreground">{target.path}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-4">
-                  {target.canControlPublicVisible ? (
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Switch checked={target.publicVisible} onCheckedChange={(checked) => updateTargetVisibility(target.id, 'publicVisible', checked)} />
-                      共有ページで表示
-                    </label>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">セクションは共有表示対象外です</span>
-                  )}
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Switch checked={target.hidden} onCheckedChange={(checked) => updateTargetVisibility(target.id, 'hidden', checked)} />
-                    フォームで非表示
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-end">
+
+          {visibilityTargets.length === 0 ? (
+            <p className="text-sm text-muted-foreground">表示対象の項目がありません。</p>
+          ) : filteredTargets.length === 0 ? (
+            <p className="text-sm text-muted-foreground">該当する項目がありません。</p>
+          ) : (
+            <div className="rounded-lg border">
+              <ScrollArea className="h-[440px]">
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-background">
+                    <TableRow>
+                      <TableHead className="w-[220px]">項目</TableHead>
+                      <TableHead className="w-[280px]">階層</TableHead>
+                      <TableHead className="w-[120px]">種別</TableHead>
+                      <TableHead className="w-[140px] text-center">共有に表示</TableHead>
+                      <TableHead className="w-[140px] text-center">フォームに表示</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTargets.map((target) => (
+                      <TableRow key={target.id}>
+                        <TableCell className="whitespace-normal">
+                          <div className="space-y-1">
+                            <p className="font-medium">{target.label}</p>
+                            {!target.canControlPublicVisible ? <p className="text-xs text-muted-foreground">セクション</p> : null}
+                          </div>
+                        </TableCell>
+                        <TableCell className="whitespace-normal text-muted-foreground">{target.path}</TableCell>
+                        <TableCell>{target.typeLabel}</TableCell>
+                        <TableCell className="text-center">
+                          {target.canControlPublicVisible ? (
+                            <div className="flex justify-center">
+                              <Switch checked={target.publicVisible} onCheckedChange={(checked) => updateTargetVisibility(target.id, 'publicVisible', checked)} />
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">対象外</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center">
+                            <Switch checked={!target.hidden} onCheckedChange={(checked) => updateTargetVisibility(target.id, 'hidden', !checked)} />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-3 border-t pt-4">
             <Button onClick={saveVisibility} disabled={isSavingVisibility}>{isSavingVisibility ? '保存中...' : '設定を保存する'}</Button>
           </div>
         </CardContent>
@@ -283,7 +333,7 @@ export const LiveManagementPage = () => {
 };
 
 function flattenVisibilityTargets(blocks: SettingSheetBlock[], parentLabel = '') {
-  const targets: Array<{ id: string; label: string; path: string; publicVisible: boolean; hidden: boolean; canControlPublicVisible: boolean }> = [];
+  const targets: Array<{ id: string; label: string; path: string; publicVisible: boolean; hidden: boolean; canControlPublicVisible: boolean; typeLabel: string }> = [];
   for (const block of blocks) {
     const path = parentLabel ? `${parentLabel} / ${block.label}` : block.label;
     targets.push({
@@ -293,6 +343,7 @@ function flattenVisibilityTargets(blocks: SettingSheetBlock[], parentLabel = '')
       publicVisible: block.publicVisible === true,
       hidden: block.hidden === true,
       canControlPublicVisible: block.type !== 'SECTION',
+      typeLabel: resolveTypeLabel(block.type),
     });
     if (block.fields.length > 0) {
       targets.push(...flattenVisibilityTargets(block.fields, path));
@@ -317,4 +368,25 @@ function updateBlockVisibilityTree(
     }
     return block;
   });
+}
+
+function resolveTypeLabel(type: SettingSheetBlock['type']) {
+  switch (type) {
+    case 'SECTION':
+      return 'セクション';
+    case 'SHORT_TEXT':
+      return '短文';
+    case 'LONG_TEXT':
+      return '長文';
+    case 'SINGLE_SELECT':
+      return '単一選択';
+    case 'MULTI_SELECT':
+      return '複数選択';
+    case 'CHECKBOX':
+      return 'チェック';
+    case 'BOOLEAN':
+      return '真偽';
+    case 'REPEATABLE_GROUP':
+      return '繰返し';
+  }
 }

@@ -3,7 +3,6 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Copy, ExternalLink, Music2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,12 +14,15 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiClient } from '@/lib/api/client';
 import {
   formatLiveDate,
+  resolveMainDisplayFieldLabel,
   type LiveResponse,
   type PublicSettingSheetSubmissionDetailResponse,
   type SettingSheetConfigResponse,
@@ -92,6 +94,7 @@ export const LiveSubmissionsPage = () => {
   }, [liveId]);
 
   const labelMap = useMemo(() => buildFieldLabelMap(config), [config]);
+  const mainDisplayLabel = useMemo(() => config ? resolveMainDisplayFieldLabel(config) : 'メイン表示', [config]);
   const duplicateSongs = useMemo(() => collectDuplicateSongs(Object.values(detailsById)), [detailsById]);
   const filteredSubmissions = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -118,6 +121,7 @@ export const LiveSubmissionsPage = () => {
     ?? null;
   const selectedDetail = selectedSubmission ? detailsById[selectedSubmission.id] ?? null : null;
   const sharedListUrl = `${window.location.origin}/public/lives/${live.publicToken}/submissions/shared`;
+  const buildEditFormUrl = (submissionId: string) => `${window.location.origin}/public/lives/${live.publicToken}/submissions/${submissionId}`;
 
   const openDetail = async (submissionId: string) => {
     setSelectedSubmissionId(submissionId);
@@ -160,6 +164,17 @@ export const LiveSubmissionsPage = () => {
     try {
       await navigator.clipboard.writeText(sharedListUrl);
       toast.success('共有リンクをコピーしました', { position: 'top-center' });
+    } catch {
+      toast.error('リンクのコピーに失敗しました', { position: 'top-center' });
+    }
+  };
+
+
+  const toEditForm = async (submissionId: string) => {
+    const editFormUrl = buildEditFormUrl(submissionId);
+    try {
+      await navigator.clipboard.writeText(editFormUrl);
+      toast.success('編集リンクをコピーしました', { position: 'top-center' });
     } catch {
       toast.error('リンクのコピーに失敗しました', { position: 'top-center' });
     }
@@ -212,39 +227,54 @@ export const LiveSubmissionsPage = () => {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Music2 className="size-5" />
-            <CardTitle className="text-base sm:text-lg">曲の被り候補</CardTitle>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Music2 className="size-5" />
+                <CardTitle className="text-base sm:text-lg">曲の被り候補</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">候補だけを先に一覧化して確認できます。</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={copySharedLink}>
+                <Copy className="size-4" />
+                共有一覧リンクをコピー
+              </Button>
+              <Button asChild size="sm">
+                <a href={sharedListUrl} target="_blank" rel="noreferrer">
+                  <ExternalLink className="size-4" />
+                  共有一覧を開く
+                </a>
+              </Button>
+              <Button variant="outline" size="sm" onClick={analyzeDuplicates} disabled={isAnalyzingDuplicates || submissions.length === 0}>
+                {isAnalyzingDuplicates ? '解析中...' : '被り候補を解析'}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="mb-3 flex flex-wrap justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={copySharedLink}>
-              <Copy className="size-4" />
-              共有一覧リンクをコピー
-            </Button>
-            <Button asChild size="sm">
-              <a href={sharedListUrl} target="_blank" rel="noreferrer">
-                <ExternalLink className="size-4" />
-                共有一覧を開く
-              </a>
-            </Button>
-          </div>
-          <div className="mb-3 flex justify-end">
-            <Button variant="outline" size="sm" onClick={analyzeDuplicates} disabled={isAnalyzingDuplicates || submissions.length === 0}>
-              {isAnalyzingDuplicates ? '解析中...' : '被り候補を解析'}
-            </Button>
-          </div>
           {duplicateSongs.length === 0 ? (
             <p className="text-sm text-muted-foreground">現時点で被り候補はありません。</p>
           ) : (
-            <div className="space-y-2">
-              {duplicateSongs.map((song) => (
-                <div key={song.key} className="rounded-md border p-3">
-                  <p className="font-medium">{song.title} <span className="text-sm text-muted-foreground">/ {song.artist || 'アーティスト未入力'}</span></p>
-                  <p className="mt-1 text-sm text-muted-foreground">{song.bands.join(' / ')}</p>
-                </div>
-              ))}
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>曲名</TableHead>
+                    <TableHead>アーティスト</TableHead>
+                    <TableHead>重複バンド</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {duplicateSongs.map((song) => (
+                    <TableRow key={song.key}>
+                      <TableCell className="font-medium">{song.title}</TableCell>
+                      <TableCell className="whitespace-normal text-muted-foreground">{song.artist || '未入力'}</TableCell>
+                      <TableCell className="whitespace-normal">{song.bands.join(' / ')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
@@ -253,7 +283,9 @@ export const LiveSubmissionsPage = () => {
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-base sm:text-lg">提出一覧</CardTitle>
+            <div className="space-y-1">
+              <CardTitle className="text-base sm:text-lg">提出一覧</CardTitle>
+            </div>
             <div className="relative w-full sm:max-w-sm">
               <Search className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
               <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="pl-8" placeholder="バンド名で検索" />
@@ -264,26 +296,31 @@ export const LiveSubmissionsPage = () => {
           {filteredSubmissions.length === 0 ? (
             <p className="text-sm text-muted-foreground">該当する提出はありません。</p>
           ) : (
-            <Accordion type="single" collapsible className="space-y-2">
-              {filteredSubmissions.map((submission) => {
-                return (
-                  <AccordionItem key={submission.id} value={submission.id} className="rounded-md border px-3">
-                    <AccordionTrigger className="py-2 hover:no-underline">
-                      <div className="flex w-full items-center justify-between gap-2 pr-2 text-left">
-                        <p className="truncate font-medium">{submission.bandName}</p>
-                        <p className="shrink-0 text-xs text-muted-foreground">{formatSubmittedAt(submission.submittedAt)}</p>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="flex flex-wrap items-center gap-2 pb-2">
-                        <Badge variant="secondary">{submission.submissionStatus}</Badge>
-                        <Button variant="outline" size="sm" onClick={() => openDetail(submission.id)}>詳細を確認</Button>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                );
-              })}
-            </Accordion>
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{mainDisplayLabel}</TableHead>
+                    <TableHead>状態</TableHead>
+                    <TableHead>提出日時</TableHead>
+                    <TableHead className="text-right">操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredSubmissions.map((submission) => (
+                    <TableRow key={submission.id}>
+                      <TableCell className="font-medium">{submission.bandName}</TableCell>
+                      <TableCell><Badge variant="secondary">{submission.submissionStatus}</Badge></TableCell>
+                      <TableCell className="text-muted-foreground">{formatSubmittedAt(submission.submittedAt)}</TableCell>
+                      <TableCell className="flex gap-2 justify-end">
+                        <Button variant="outline" size="sm" onClick={() => openDetail(submission.id)}>詳細</Button>
+                        <Button variant="outline" size="sm" onClick={() => toEditForm(submission.id)}><Copy/></Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -292,11 +329,8 @@ export const LiveSubmissionsPage = () => {
         <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>提出詳細</DialogTitle>
-            <DialogDescription>
-              回答内容を確認できます。長いデータはスクロールして確認してください。
-            </DialogDescription>
           </DialogHeader>
-          <div className="overflow-y-auto pr-1">
+          <ScrollArea className="max-h-[60vh] pr-1">
             {!selectedSubmission ? (
               <p className="text-sm text-muted-foreground">提出を選択してください。</p>
             ) : !selectedDetail ? (
@@ -304,7 +338,7 @@ export const LiveSubmissionsPage = () => {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">バンド名</p>
+                  <p className="text-sm text-muted-foreground">{mainDisplayLabel}</p>
                   <p className="font-semibold">{selectedDetail.bandName}</p>
                   <p className="mt-1 text-xs text-muted-foreground">提出日時: {formatSubmittedAt(selectedDetail.submittedAt)}</p>
                 </div>
@@ -314,7 +348,7 @@ export const LiveSubmissionsPage = () => {
                 </div>
               </div>
             )}
-          </div>
+          </ScrollArea>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>閉じる</Button>
           </DialogFooter>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildPublicLiveUrl,
+  collectMainDisplayFieldCandidates,
   createLiveFormFromResponse,
   formatDeadline,
   formatLiveDate,
@@ -80,5 +81,55 @@ describe('lives type utilities', () => {
     expect(formatDeadline('2025-04-05T12:34:00')).toBe(
       new Intl.DateTimeFormat('ja-JP', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date('2025-04-05T12:34:00')),
     );
+  });
+
+  it('主表示項目に使える候補を入れ子を含めて収集する', () => {
+    const candidates = collectMainDisplayFieldCandidates([
+      {
+        id: 'section-1',
+        type: 'SECTION',
+        label: '基本情報',
+        description: '',
+        hidden: false,
+        publicVisible: false,
+        required: false,
+        collapsible: false,
+        appearance: 'plain',
+        itemAppearance: 'plain',
+        options: [],
+        minItems: 0,
+        addButtonLabel: '',
+        entryTitle: '',
+        titleSourceFieldId: '',
+        fields: [
+          {
+            id: 'display-name',
+            type: 'SHORT_TEXT',
+            label: '表示名',
+            description: '',
+            hidden: false,
+            publicVisible: false,
+            required: true,
+            collapsible: false,
+            appearance: 'outline',
+            itemAppearance: 'plain',
+            options: [],
+            minItems: 0,
+            addButtonLabel: '',
+            entryTitle: '',
+            titleSourceFieldId: '',
+            fields: [],
+            layout: { width: 'half', optionColumns: 1, optionFitContent: false },
+            optionSource: null,
+          },
+        ],
+        layout: { width: 'full', optionColumns: 1, optionFitContent: false },
+        optionSource: null,
+      },
+    ]);
+
+    expect(candidates).toEqual([
+      { value: 'display-name', label: '基本情報 / 表示名' },
+    ]);
   });
 });

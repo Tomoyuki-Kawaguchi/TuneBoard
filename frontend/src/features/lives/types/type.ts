@@ -54,6 +54,7 @@ export interface SettingSheetConfigResponse {
   description: string;
   submitButtonLabel: string;
   publicSubmissionEnabled: boolean;
+  mainDisplayFieldId: string;
   blocks: SettingSheetBlock[];
 }
 
@@ -169,6 +170,7 @@ export const DEFAULT_SETTING_SHEET_CONFIG: SettingSheetConfigResponse = {
   description: '出演情報、メンバー、演奏曲を入力してください。',
   submitButtonLabel: '送信する',
   publicSubmissionEnabled: true,
+  mainDisplayFieldId: 'band-name',
   blocks: [
     { id: 'section-band', type: 'SECTION', label: 'バンド基本情報', description: 'バンド名、提出状況、備考を入力します。', hidden: false, required: false, collapsible: false, appearance: 'plain', itemAppearance: 'plain', options: [], minItems: 0, addButtonLabel: '', entryTitle: '', titleSourceFieldId: '', fields: [], layout: { width: 'full', optionColumns: 1, optionFitContent: false }, optionSource: null },
     { id: 'band-name', type: 'SHORT_TEXT', label: 'バンド名', description: '', hidden: false, required: true, collapsible: false, appearance: 'outline', itemAppearance: 'plain', options: [], minItems: 0, addButtonLabel: '', entryTitle: '', titleSourceFieldId: '', fields: [], layout: { width: 'half', optionColumns: 1, optionFitContent: false }, optionSource: null },
@@ -251,6 +253,7 @@ export const DEFAULT_SETTING_SHEET_CONFIG: SettingSheetConfigResponse = {
 export function createTemplateSettingSheetConfig(): SettingSheetConfigResponse {
   return {
     ...DEFAULT_SETTING_SHEET_CONFIG,
+    mainDisplayFieldId: DEFAULT_SETTING_SHEET_CONFIG.mainDisplayFieldId,
     blocks: DEFAULT_SETTING_SHEET_CONFIG.blocks.map(cloneBlock),
   };
 }
@@ -317,8 +320,44 @@ export function normalizeSettingSheetConfig(config: SettingSheetConfigResponse |
     description: config.description?.trim() || DEFAULT_SETTING_SHEET_CONFIG.description,
     submitButtonLabel: config.submitButtonLabel?.trim() || DEFAULT_SETTING_SHEET_CONFIG.submitButtonLabel,
     publicSubmissionEnabled: config.publicSubmissionEnabled === true,
+    mainDisplayFieldId: resolveMainDisplayFieldId(config.mainDisplayFieldId, config.blocks == null ? createTemplateSettingSheetConfig().blocks : blocks),
     blocks: config.blocks == null ? createTemplateSettingSheetConfig().blocks : blocks,
   };
+}
+
+export function collectMainDisplayFieldCandidates(blocks: SettingSheetBlock[], trail: string[] = []) {
+  const candidates: Array<{ value: string; label: string }> = [];
+
+  for (const block of blocks) {
+    const nextTrail = [...trail, block.label];
+    if (isSectionBlock(block.type) || isRepeatableGroupBlock(block.type)) {
+      candidates.push(...collectMainDisplayFieldCandidates(block.fields, nextTrail));
+      continue;
+    }
+
+    if (isInputBlock(block.type)) {
+      candidates.push({ value: block.id, label: nextTrail.join(' / ') });
+    }
+  }
+
+  return candidates;
+}
+
+export function resolveMainDisplayFieldLabel(config: Pick<SettingSheetConfigResponse, 'blocks' | 'mainDisplayFieldId'>) {
+  const selected = collectMainDisplayFieldCandidates(config.blocks)
+    .find((candidate) => candidate.value === config.mainDisplayFieldId);
+  return selected?.label.split(' / ').at(-1) ?? 'メイン表示';
+}
+
+function resolveMainDisplayFieldId(fieldId: string | undefined, blocks: SettingSheetBlock[]) {
+  const normalizedFieldId = fieldId?.trim() ?? '';
+  if (!normalizedFieldId) {
+    return '';
+  }
+
+  return collectMainDisplayFieldCandidates(blocks).some((candidate) => candidate.value === normalizedFieldId)
+    ? normalizedFieldId
+    : '';
 }
 
 function normalizeBlock(block: SettingSheetBlock, fallbackId: string): SettingSheetBlock {
@@ -450,4 +489,32 @@ export function formatOptionalText(value: string | null) {
   }
 
   return value;
+}
+
+export function isPublicSubmissionClosed(live: Pick<PublicLiveResponse, 'status' | 'deadlineAt'>) {
+  if (live.status !== 'PUBLISHED') {
+    return true;
+  }
+
+  if (!live.deadlineAt) {
+    return false;
+  }
+
+  return new Date(live.deadlineAt).getTime() < Date.now();
+}
+
+export function getPublicSubmissionStatusMessage(live: Pick<PublicLiveResponse, 'status' | 'deadlineAt'>) {
+  if (live.status === 'DRAFT') {
+    return 'このライブはまだ公開準備中です。管理者が公開すると回答できるようになります。';
+  }
+
+  if (live.status === 'CLOSED') {
+    return 'このライブの回答受付は終了しています。';
+  }
+
+  if (live.deadlineAt && new Date(live.deadlineAt).getTime() < Date.now()) {
+    return '回答締切を過ぎたため、送信・更新はできません。';
+  }
+
+  return '';
 }

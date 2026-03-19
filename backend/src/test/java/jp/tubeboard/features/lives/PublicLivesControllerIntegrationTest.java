@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -172,11 +173,54 @@ class PublicLivesControllerIntegrationTest {
                                 .andExpect(jsonPath("$.bandName").value("Recursive Band"));
         }
 
+        @Test
+        void 主表示項目に指定したフィールドを提出一覧名として使う() throws Exception {
+                Live live = createPublicLive(createCustomMainDisplayConfig());
+
+                PublicSettingSheetSubmissionRequest request = new PublicSettingSheetSubmissionRequest(List.of(
+                                new FieldAnswerRequest("entry-name", List.of("Display Name"), List.of()),
+                                new FieldAnswerRequest("note", List.of("memo"), List.of())));
+
+                mockMvc.perform(post("/api/public/lives/{publicToken}/setting-sheet/submissions", live.getPublicToken())
+                                .contentType(APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.bandName").value("Display Name"));
+        }
+
+        @Test
+        void 下書きライブには公開送信できない() throws Exception {
+                Live live = createPublicLive(createSimpleConfig(), LiveStatus.DRAFT, null);
+
+                mockMvc.perform(post("/api/public/lives/{publicToken}/setting-sheet/submissions", live.getPublicToken())
+                                .contentType(APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(createSubmissionRequest("Draft Band"))))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("このライブは現在回答を受け付けていません"));
+        }
+
+        @Test
+        void 締切後のライブには公開送信できない() throws Exception {
+                Live live = createPublicLive(createSimpleConfig(), LiveStatus.PUBLISHED,
+                                LocalDateTime.now().minusMinutes(5));
+
+                mockMvc.perform(post("/api/public/lives/{publicToken}/setting-sheet/submissions", live.getPublicToken())
+                                .contentType(APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(createSubmissionRequest("Late Band"))))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("回答受付は終了しました"));
+        }
+
         private Live createPublicLive() throws Exception {
                 return createPublicLive(createSimpleConfig());
         }
 
         private Live createPublicLive(SettingSheetConfigResponse config) throws Exception {
+                return createPublicLive(config, LiveStatus.PUBLISHED, null);
+        }
+
+        private Live createPublicLive(SettingSheetConfigResponse config, LiveStatus status, LocalDateTime deadlineAt)
+                        throws Exception {
                 User user = userRepository.save(User.builder()
                                 .sub("test-sub")
                                 .email("test@example.com")
@@ -192,7 +236,8 @@ class PublicLivesControllerIntegrationTest {
                                 .tenant(tenant)
                                 .publicToken(UUID.randomUUID().toString())
                                 .name("Test Live")
-                                .status(LiveStatus.PUBLISHED)
+                                .status(status)
+                                .deadlineAt(deadlineAt)
                                 .settingsJson(objectMapper.writeValueAsString(config))
                                 .build());
         }
@@ -203,6 +248,7 @@ class PublicLivesControllerIntegrationTest {
                                 "",
                                 "送信する",
                                 false,
+                                "band-name",
                                 List.of(new FormBlockResponse(
                                                 "band-name",
                                                 "SHORT_TEXT",
@@ -230,6 +276,7 @@ class PublicLivesControllerIntegrationTest {
                                 "",
                                 "送信する",
                                 false,
+                                "band-name",
                                 List.of(new FormBlockResponse(
                                                 "section-1",
                                                 "SECTION",
@@ -275,6 +322,7 @@ class PublicLivesControllerIntegrationTest {
                                 "",
                                 "送信する",
                                 false,
+                                "band-name",
                                 List.of(new FormBlockResponse(
                                                 "section-1",
                                                 "SECTION",
@@ -320,6 +368,7 @@ class PublicLivesControllerIntegrationTest {
                                 "",
                                 "送信する",
                                 false,
+                                "band-name",
                                 List.of(
                                                 new FormBlockResponse(
                                                                 "section-1",
@@ -430,6 +479,54 @@ class PublicLivesControllerIntegrationTest {
                                                                                 List.of(),
                                                                                 new LayoutResponse("half", 1, false),
                                                                                 null)),
+                                                                new LayoutResponse("full", 1, false),
+                                                                null)));
+        }
+
+        private SettingSheetConfigResponse createCustomMainDisplayConfig() {
+                return new SettingSheetConfigResponse(
+                                "公開フォーム",
+                                "",
+                                "送信する",
+                                false,
+                                "entry-name",
+                                List.of(
+                                                new FormBlockResponse(
+                                                                "entry-name",
+                                                                "SHORT_TEXT",
+                                                                "表示名",
+                                                                "",
+                                                                false,
+                                                                false,
+                                                                true,
+                                                                false,
+                                                                "outline",
+                                                                "plain",
+                                                                List.of(),
+                                                                0,
+                                                                "",
+                                                                "",
+                                                                "",
+                                                                List.of(),
+                                                                new LayoutResponse("half", 1, false),
+                                                                null),
+                                                new FormBlockResponse(
+                                                                "note",
+                                                                "LONG_TEXT",
+                                                                "備考",
+                                                                "",
+                                                                false,
+                                                                false,
+                                                                false,
+                                                                false,
+                                                                "outline",
+                                                                "plain",
+                                                                List.of(),
+                                                                0,
+                                                                "",
+                                                                "",
+                                                                "",
+                                                                List.of(),
                                                                 new LayoutResponse("full", 1, false),
                                                                 null)));
         }

@@ -76,6 +76,7 @@ public class SettingSheetConfigService {
                                 "出演情報、メンバー、演奏曲を入力してください。",
                                 "送信する",
                                 true,
+                                "band-name",
                                 List.of(
                                                 formBuilderHelper.sectionBlock("section-band", "バンド基本情報",
                                                                 "バンド名、提出状況、備考を入力します。", bandFields),
@@ -108,6 +109,11 @@ public class SettingSheetConfigService {
                                         parsed.publicSubmissionEnabled() == null
                                                         ? defaults.publicSubmissionEnabled()
                                                         : parsed.publicSubmissionEnabled(),
+                                        helper.normalizeMainDisplayFieldId(parsed.mainDisplayFieldId(),
+                                                        helper.normalizeBlocks(
+                                                                        helper.mapToFormBlockRequests(parsed.blocks()),
+                                                                        defaults),
+                                                        defaults.mainDisplayFieldId()),
                                         helper.normalizeBlocks(helper.mapToFormBlockRequests(parsed.blocks()),
                                                         defaults));
                 } catch (JsonProcessingException ex) {
@@ -127,12 +133,15 @@ public class SettingSheetConfigService {
                 SettingSheetConfigResponse defaults = defaultSettingSheetConfig();
                 Boolean publicSubmissionEnabled = resolvePublicSubmissionEnabled(request,
                                 defaults.publicSubmissionEnabled());
+                List<FormBlockResponse> normalizedBlocks = helper.normalizeBlocks(request.blocks(), defaults);
                 return new SettingSheetConfigResponse(
                                 formBuilderHelper.safeTextOrDefault(request.title(), "バンド申請フォーム"),
                                 formBuilderHelper.safeTextOrDefault(request.description(), "出演情報、メンバー、演奏曲を入力してください。"),
                                 formBuilderHelper.safeTextOrDefault(request.submitButtonLabel(), "送信する"),
                                 publicSubmissionEnabled,
-                                helper.normalizeBlocks(request.blocks(), defaults));
+                                helper.normalizeMainDisplayFieldId(request, normalizedBlocks,
+                                                defaults.mainDisplayFieldId()),
+                                normalizedBlocks);
         }
 
         private Boolean resolvePublicSubmissionEnabled(SettingSheetConfigUpdateRequest request, Boolean fallback) {
