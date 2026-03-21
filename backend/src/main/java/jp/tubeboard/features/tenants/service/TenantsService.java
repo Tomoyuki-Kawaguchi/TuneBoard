@@ -145,7 +145,7 @@ public class TenantsService implements ITenantsService {
         private SettingSheetSubmission createSubmission(Live live, String bandName, String songTitle, String artist) {
                 return SettingSheetSubmission.builder()
                                 .live(live)
-                                .bandName(bandName)
+                                .recordLabel(bandName)
                                 .submissionStatus("submitted")
                                 .payloadJson(toPayloadJson(bandName, songTitle, artist))
                                 .build();

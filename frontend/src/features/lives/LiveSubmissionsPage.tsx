@@ -22,12 +22,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { apiClient } from '@/lib/api/client';
 import {
   formatLiveDate,
-  resolveMainDisplayFieldLabel,
+  resolveRecordLabel,
   type LiveResponse,
   type PublicSettingSheetSubmissionDetailResponse,
+  type SettingSheetBlock,
   type SettingSheetConfigResponse,
-  type SettingSheetSubmissionResponse,
+  type SettingSheetSubmissionAnswerResponse,
 } from './types/type';
+
+interface ColumnDef {
+  id: string;
+  label: string;
+  type: SettingSheetBlock['type'];
+}
 
 interface DuplicateSongCandidate {
   key: string;
@@ -40,12 +47,10 @@ export const LiveSubmissionsPage = () => {
   const { tenantId, liveId } = useParams<{ tenantId: string; liveId: string }>();
   const [live, setLive] = useState<LiveResponse | null>(null);
   const [config, setConfig] = useState<SettingSheetConfigResponse | null>(null);
-  const [submissions, setSubmissions] = useState<SettingSheetSubmissionResponse[]>([]);
-  const [detailsById, setDetailsById] = useState<Record<string, PublicSettingSheetSubmissionDetailResponse>>({});
+  const [details, setDetails] = useState<PublicSettingSheetSubmissionDetailResponse[]>([]);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string>('');
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAnalyzingDuplicates, setIsAnalyzingDuplicates] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -58,10 +63,10 @@ export const LiveSubmissionsPage = () => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [liveResponse, configResponse, listResponse] = await Promise.all([
+        const [liveResponse, configResponse, detailsResponse] = await Promise.all([
           apiClient.get<LiveResponse>(`/lives/${liveId}`),
           apiClient.get<SettingSheetConfigResponse>(`/lives/${liveId}/setting-sheet/config`),
-          apiClient.get<SettingSheetSubmissionResponse[]>(`/lives/${liveId}/setting-sheet/submissions`),
+          apiClient.get<PublicSettingSheetSubmissionDetailResponse[]>(`/lives/${liveId}/setting-sheet/submissions/details`),
         ]);
 
         if (!liveResponse || !configResponse) {
@@ -74,7 +79,7 @@ export const LiveSubmissionsPage = () => {
 
         setLive(liveResponse);
         setConfig(configResponse);
-        setSubmissions(listResponse ?? []);
+        setDetails(detailsResponse ?? []);
       } catch {
         if (!cancelled) {
           toast.error('提出情報の取得に失敗しました', { position: 'top-center' });
@@ -94,15 +99,25 @@ export const LiveSubmissionsPage = () => {
   }, [liveId]);
 
   const labelMap = useMemo(() => buildFieldLabelMap(config), [config]);
-  const mainDisplayLabel = useMemo(() => config ? resolveMainDisplayFieldLabel(config) : 'メイン表示', [config]);
-  const duplicateSongs = useMemo(() => collectDuplicateSongs(Object.values(detailsById)), [detailsById]);
-  const filteredSubmissions = useMemo(() => {
+  const recordLabel = useMemo(() => resolveRecordLabel(config), [config]);
+  const tableColumns = useMemo(() => collectColumns(config, 'tableVisible'), [config]);
+  const duplicateSongs = useMemo(() => collectDuplicateSongs(details), [details]);
+
+  const filteredDetails = useMemo(() => {
     if (!searchQuery.trim()) {
-      return submissions;
+      return details;
     }
     const query = searchQuery.trim().toLowerCase();
-    return submissions.filter((submission) => submission.bandName.toLowerCase().includes(query));
-  }, [searchQuery, submissions]);
+    return details.filter((detail) => {
+      if (detail.recordLabel.toLowerCase().includes(query)) {
+        return true;
+      }
+      return tableColumns.some((column) => {
+        const value = extractCellValue(detail.answers, column.id, column.type);
+        return value.toLowerCase().includes(query);
+      });
+    });
+  }, [searchQuery, details, tableColumns]);
 
   if (!tenantId || !liveId) {
     return <Navigate to="/tenants" replace />;
@@ -116,49 +131,9 @@ export const LiveSubmissionsPage = () => {
     return <Navigate to={`/tenants/${tenantId}/lives`} replace />;
   }
 
-  const selectedSubmission = filteredSubmissions.find((submission) => submission.id === selectedSubmissionId)
-    ?? submissions.find((submission) => submission.id === selectedSubmissionId)
-    ?? null;
-  const selectedDetail = selectedSubmission ? detailsById[selectedSubmission.id] ?? null : null;
+  const selectedDetail = details.find((d) => d.id === selectedSubmissionId) ?? null;
   const sharedListUrl = `${window.location.origin}/public/lives/${live.publicToken}/submissions/shared`;
   const buildEditFormUrl = (submissionId: string) => `${window.location.origin}/public/lives/${live.publicToken}/submissions/${submissionId}`;
-
-  const openDetail = async (submissionId: string) => {
-    setSelectedSubmissionId(submissionId);
-    setIsDetailDialogOpen(true);
-    if (detailsById[submissionId]) {
-      return;
-    }
-    try {
-      const detail = await apiClient.get<PublicSettingSheetSubmissionDetailResponse>(`/lives/${liveId}/setting-sheet/submissions/${submissionId}`);
-      if (detail) {
-        setDetailsById((current) => ({ ...current, [submissionId]: detail }));
-      }
-    } catch {
-      toast.error('提出詳細の取得に失敗しました', { position: 'top-center' });
-    }
-  };
-
-  const analyzeDuplicates = async () => {
-    setIsAnalyzingDuplicates(true);
-    try {
-      const missingIds = submissions.map((submission) => submission.id).filter((id) => !detailsById[id]);
-      if (missingIds.length > 0) {
-        const detailPairs = await Promise.all(
-          missingIds.map(async (id) => {
-            const detail = await apiClient.get<PublicSettingSheetSubmissionDetailResponse>(`/lives/${liveId}/setting-sheet/submissions/${id}`);
-            return detail ? [id, detail] : null;
-          }),
-        );
-        const loaded = Object.fromEntries(detailPairs.filter((pair): pair is [string, PublicSettingSheetSubmissionDetailResponse] => pair !== null));
-        setDetailsById((current) => ({ ...current, ...loaded }));
-      }
-    } catch {
-      toast.error('曲の被り解析に失敗しました', { position: 'top-center' });
-    } finally {
-      setIsAnalyzingDuplicates(false);
-    }
-  };
 
   const copySharedLink = async () => {
     try {
@@ -169,11 +144,9 @@ export const LiveSubmissionsPage = () => {
     }
   };
 
-
-  const toEditForm = async (submissionId: string) => {
-    const editFormUrl = buildEditFormUrl(submissionId);
+  const copyEditLink = async (submissionId: string) => {
     try {
-      await navigator.clipboard.writeText(editFormUrl);
+      await navigator.clipboard.writeText(buildEditFormUrl(submissionId));
       toast.success('編集リンクをコピーしました', { position: 'top-center' });
     } catch {
       toast.error('リンクのコピーに失敗しました', { position: 'top-center' });
@@ -213,7 +186,7 @@ export const LiveSubmissionsPage = () => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <h1 className="text-xl font-semibold sm:text-2xl">提出済みSettingSheet</h1>
-              <p className="text-sm text-muted-foreground">{live.name} / {formatLiveDate(live.date)} / 全{submissions.length}件</p>
+              <p className="text-sm text-muted-foreground">{live.name} / {formatLiveDate(live.date)} / 全{details.length}件</p>
             </div>
             <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link to={`/tenants/${tenantId}/lives/${liveId}`}>
@@ -233,7 +206,7 @@ export const LiveSubmissionsPage = () => {
                 <Music2 className="size-5" />
                 <CardTitle className="text-base sm:text-lg">曲の被り候補</CardTitle>
               </div>
-              <p className="text-sm text-muted-foreground">候補だけを先に一覧化して確認できます。</p>
+              <p className="text-sm text-muted-foreground">全提出から自動的に被り候補を検出します。</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={copySharedLink}>
@@ -245,9 +218,6 @@ export const LiveSubmissionsPage = () => {
                   <ExternalLink className="size-4" />
                   共有一覧を開く
                 </a>
-              </Button>
-              <Button variant="outline" size="sm" onClick={analyzeDuplicates} disabled={isAnalyzingDuplicates || submissions.length === 0}>
-                {isAnalyzingDuplicates ? '解析中...' : '被り候補を解析'}
               </Button>
             </div>
           </div>
@@ -262,7 +232,7 @@ export const LiveSubmissionsPage = () => {
                   <TableRow>
                     <TableHead>曲名</TableHead>
                     <TableHead>アーティスト</TableHead>
-                    <TableHead>重複バンド</TableHead>
+                    <TableHead>重複提出</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -285,41 +255,54 @@ export const LiveSubmissionsPage = () => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <CardTitle className="text-base sm:text-lg">提出一覧</CardTitle>
+              {tableColumns.length === 0 && (
+                <p className="text-xs text-muted-foreground">フォーム編集画面で「管理者提出一覧でこの項目を列として表示する」を設定すると、ここに列が追加されます。</p>
+              )}
             </div>
             <div className="relative w-full sm:max-w-sm">
               <Search className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
-              <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="pl-8" placeholder="バンド名で検索" />
+              <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="pl-8" placeholder={`${recordLabel}で検索`} />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {filteredSubmissions.length === 0 ? (
+          {filteredDetails.length === 0 ? (
             <p className="text-sm text-muted-foreground">該当する提出はありません。</p>
           ) : (
             <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{mainDisplayLabel}</TableHead>
-                    <TableHead>状態</TableHead>
-                    <TableHead>提出日時</TableHead>
-                    <TableHead className="text-right">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSubmissions.map((submission) => (
-                    <TableRow key={submission.id}>
-                      <TableCell className="font-medium">{submission.bandName}</TableCell>
-                      <TableCell><Badge variant="secondary">{submission.submissionStatus}</Badge></TableCell>
-                      <TableCell className="text-muted-foreground">{formatSubmittedAt(submission.submittedAt)}</TableCell>
-                      <TableCell className="flex gap-2 justify-end">
-                        <Button variant="outline" size="sm" onClick={() => openDetail(submission.id)}>詳細</Button>
-                        <Button variant="outline" size="sm" onClick={() => toEditForm(submission.id)}><Copy/></Button>
-                      </TableCell>
+              <ScrollArea className="w-full">
+                <Table className="min-w-max">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="sticky left-0 z-10 bg-background">{recordLabel}</TableHead>
+                      {tableColumns.map((column) => (
+                        <TableHead key={column.id} className="w-[200px] whitespace-normal">{column.label}</TableHead>
+                      ))}
+                      <TableHead>状態</TableHead>
+                      <TableHead>提出日時</TableHead>
+                      <TableHead className="text-right">操作</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDetails.map((detail) => (
+                      <TableRow key={detail.id}>
+                        <TableCell className="sticky left-0 z-10 bg-background font-medium">{detail.recordLabel}</TableCell>
+                        {tableColumns.map((column) => (
+                          <TableCell key={`${detail.id}-${column.id}`} className="w-[200px] whitespace-pre-line align-top text-sm">
+                            {extractCellValue(detail.answers, column.id, column.type)}
+                          </TableCell>
+                        ))}
+                        <TableCell><Badge variant="secondary">{detail.submissionStatus}</Badge></TableCell>
+                        <TableCell className="text-muted-foreground">{formatSubmittedAt(detail.submittedAt)}</TableCell>
+                        <TableCell className="flex gap-2 justify-end">
+                          <Button variant="outline" size="sm" onClick={() => { setSelectedSubmissionId(detail.id); setIsDetailDialogOpen(true); }}>詳細</Button>
+                          <Button variant="outline" size="sm" onClick={() => copyEditLink(detail.id)}><Copy className="size-4" /></Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
             </div>
           )}
         </CardContent>
@@ -331,15 +314,13 @@ export const LiveSubmissionsPage = () => {
             <DialogTitle>提出詳細</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh] pr-1">
-            {!selectedSubmission ? (
+            {!selectedDetail ? (
               <p className="text-sm text-muted-foreground">提出を選択してください。</p>
-            ) : !selectedDetail ? (
-              <p className="text-sm text-muted-foreground">提出内容を読み込み中です...</p>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">{mainDisplayLabel}</p>
-                  <p className="font-semibold">{selectedDetail.bandName}</p>
+                  <p className="text-sm text-muted-foreground">{recordLabel}</p>
+                  <p className="font-semibold">{selectedDetail.recordLabel}</p>
                   <p className="mt-1 text-xs text-muted-foreground">提出日時: {formatSubmittedAt(selectedDetail.submittedAt)}</p>
                 </div>
                 <Separator />
@@ -357,6 +338,46 @@ export const LiveSubmissionsPage = () => {
     </div>
   );
 };
+
+function collectColumns(config: SettingSheetConfigResponse | null, visibilityKey: 'publicVisible' | 'tableVisible'): ColumnDef[] {
+  if (!config) {
+    return [];
+  }
+  const columns: ColumnDef[] = [];
+
+  const visit = (blocks: SettingSheetConfigResponse['blocks']) => {
+    for (const block of blocks) {
+      if (block.type === 'SECTION') {
+        visit(block.fields);
+        continue;
+      }
+      if (block[visibilityKey]) {
+        columns.push({ id: block.id, label: block.label, type: block.type });
+      }
+    }
+  };
+
+  visit(config.blocks);
+  return columns;
+}
+
+function extractCellValue(
+  answers: SettingSheetSubmissionAnswerResponse[],
+  fieldId: string,
+  blockType: SettingSheetBlock['type'],
+): string {
+  const answer = answers.find((a) => a.fieldId === fieldId);
+  if (!answer) {
+    return '未入力';
+  }
+  if (blockType === 'REPEATABLE_GROUP') {
+    if (answer.items.length === 0) {
+      return '未入力';
+    }
+    return `${answer.items.length}件`;
+  }
+  return answer.values.length > 0 ? answer.values.join(' / ') : '未入力';
+}
 
 function buildFieldLabelMap(config: SettingSheetConfigResponse | null) {
   const map = new Map<string, string>();
@@ -392,9 +413,9 @@ function collectDuplicateSongs(submissions: PublicSettingSheetSubmissionDetailRe
 
       const existing = songMap.get(song.key);
       if (existing) {
-        existing.bands.add(submission.bandName);
+        existing.bands.add(submission.recordLabel);
       } else {
-        songMap.set(song.key, { title: song.title, artist: song.artist, bands: new Set([submission.bandName]) });
+        songMap.set(song.key, { title: song.title, artist: song.artist, bands: new Set([submission.recordLabel]) });
       }
     }
   }

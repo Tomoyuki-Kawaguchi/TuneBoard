@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest.FormBlockRequest;
 import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest.LayoutRequest;
 import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest.OptionSourceRequest;
-import jp.tubeboard.features.lives.dto.request.SettingSheetConfigUpdateRequest;
 import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse;
 import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse.FormBlockResponse;
 import jp.tubeboard.features.lives.dto.response.SettingSheetConfigResponse.OptionSourceResponse;
@@ -34,38 +33,6 @@ public class SettingSheetConfigServiceHelper {
                 return List.copyOf(normalizedBlocks);
         }
 
-        public String normalizeMainDisplayFieldId(String candidate, List<FormBlockResponse> blocks, String fallback) {
-                String normalized = formBuilderHelper.safeText(candidate);
-                if (normalized.isBlank()) {
-                        return "";
-                }
-                return hasDisplayCandidate(blocks, normalized) ? normalized : fallback;
-        }
-
-        public String normalizeMainDisplayFieldId(SettingSheetConfigUpdateRequest request,
-                        List<FormBlockResponse> blocks,
-                        String fallback) {
-                return normalizeMainDisplayFieldId(request.mainDisplayFieldId(), blocks, fallback);
-        }
-
-        private boolean hasDisplayCandidate(List<FormBlockResponse> blocks, String fieldId) {
-                for (FormBlockResponse block : blocks) {
-                        if (SettingSheetConstants.BLOCK_SECTION.equals(block.type())
-                                        || SettingSheetConstants.BLOCK_REPEATABLE_GROUP.equals(block.type())) {
-                                if (hasDisplayCandidate(block.fields(), fieldId)) {
-                                        return true;
-                                }
-                                continue;
-                        }
-
-                        if (block.id().equals(fieldId)
-                                        && SettingSheetConstants.VALUE_BLOCK_TYPES.contains(block.type())) {
-                                return true;
-                        }
-                }
-                return false;
-        }
-
         public FormBlockResponse normalizeBlock(FormBlockRequest block, SettingSheetConfigResponse defaultConfig) {
                 String type = formBuilderHelper.normalizeBlockType(block.type());
                 boolean valueBlock = SettingSheetConstants.VALUE_BLOCK_TYPES.contains(type);
@@ -82,6 +49,7 @@ public class SettingSheetConfigServiceHelper {
                                 formBuilderHelper.safeText(block.description()),
                                 Boolean.TRUE.equals(block.hidden()),
                                 Boolean.TRUE.equals(block.publicVisible()),
+                                Boolean.TRUE.equals(block.tableVisible()),
                                 (valueBlock || repeatableGroup) && Boolean.TRUE.equals(block.required()),
                                 repeatableGroup && Boolean.TRUE.equals(block.collapsible()),
                                 formBuilderHelper.normalizeAppearance(block.appearance(),
@@ -115,6 +83,7 @@ public class SettingSheetConfigServiceHelper {
                                 block.description(),
                                 block.hidden(),
                                 block.publicVisible(),
+                                block.tableVisible(),
                                 block.required(),
                                 block.collapsible(),
                                 block.appearance(),

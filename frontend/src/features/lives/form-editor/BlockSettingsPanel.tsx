@@ -157,6 +157,12 @@ export const BlockSettingsPanel = ({
                   提出共有リンクでこの項目を表示する
                 </div>
               </div>
+              <div className="lg:col-span-2 rounded-xl border bg-muted/30 p-3">
+                <div className="flex items-center gap-3 text-sm">
+                  <Checkbox checked={block.tableVisible === true} onCheckedChange={(checked) => onUpdateBlock(block.id, { tableVisible: checked === true })} />
+                  管理者提出一覧でこの項目を列として表示する
+                </div>
+              </div>
               {canUseAsMainDisplay ? (
                 <div className="lg:col-span-2 rounded-xl border bg-muted/30 p-3">
                   <div className="flex items-center gap-3 text-sm">

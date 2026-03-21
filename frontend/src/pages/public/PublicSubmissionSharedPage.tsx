@@ -9,7 +9,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiClient } from '@/lib/api/client';
 import { ApiClientError } from '@/lib/api/type';
-import { resolveMainDisplayFieldLabel, type PublicLiveResponse, type PublicSettingSheetSubmissionDetailResponse, type SettingSheetConfigResponse } from '@/features/lives/types/type';
+import {
+  type PublicLiveResponse,
+  type PublicSettingSheetSubmissionDetailResponse,
+  type SettingSheetBlock,
+  type SettingSheetSubmissionAnswerResponse,
+  resolveRecordLabel,
+  type SettingSheetConfigResponse,
+} from '@/features/lives/types/type';
+
+interface ColumnDef {
+  id: string;
+  label: string;
+  type: SettingSheetBlock['type'];
+}
 
 export const PublicSubmissionSharedPage = () => {
   const { publicToken, submissionId } = useParams<{ publicToken: string; submissionId?: string }>();
@@ -43,14 +56,11 @@ export const PublicSubmissionSharedPage = () => {
         }
       } catch (error: unknown) {
         if (!cancelled) {
-          if (error instanceof ApiClientError) {
-            const message = error.apiError?.message ?? '共有提出データの取得に失敗しました';
-            setErrorMessage(message);
-            toast.error(message, { position: 'top-center' });
-          } else {
-            setErrorMessage('共有提出データの取得に失敗しました');
-            toast.error('共有提出データの取得に失敗しました', { position: 'top-center' });
-          }
+          const message = error instanceof ApiClientError
+            ? (error.apiError?.message ?? '共有提出データの取得に失敗しました')
+            : '共有提出データの取得に失敗しました';
+          setErrorMessage(message);
+          toast.error(message, { position: 'top-center' });
         }
       } finally {
         if (!cancelled) {
@@ -66,42 +76,25 @@ export const PublicSubmissionSharedPage = () => {
     };
   }, [publicToken, submissionId]);
 
-  const labelMap = useMemo(() => buildFieldLabelMap(live?.settingSheetConfig ?? null), [live?.settingSheetConfig]);
-  const mainDisplayLabel = useMemo(
-    () => live ? resolveMainDisplayFieldLabel(live.settingSheetConfig) : 'メイン表示',
-    [live],
-  );
-  const rows = useMemo(() => submissions.map((submission) => ({
-    id: submission.id,
-    bandName: submission.bandName,
-    submittedAt: formatSubmittedAt(submission.submittedAt),
-    values: flattenAnswers(submission.answers, labelMap),
-  })), [submissions, labelMap]);
-  const columns = useMemo(() => {
-    const ordered = new Map<string, string>();
-    for (const row of rows) {
-      for (const [label] of row.values) {
-        if (!ordered.has(label)) {
-          ordered.set(label, label);
-        }
-      }
-    }
-    return Array.from(ordered.keys());
-  }, [rows]);
-  const filteredRows = useMemo(() => {
+  const config = live?.settingSheetConfig ?? null;
+  const recordLabel = useMemo(() => resolveRecordLabel(config), [config]);
+  const columns = useMemo(() => collectColumns(config, 'publicVisible'), [config]);
+
+  const filteredSubmissions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) {
-      return rows;
+      return submissions;
     }
-
-    return rows.filter((row) => {
-      if (row.bandName.toLowerCase().includes(query)) {
+    return submissions.filter((submission) => {
+      if (submission.recordLabel.toLowerCase().includes(query)) {
         return true;
       }
-
-      return Array.from(row.values.values()).some((value) => value.toLowerCase().includes(query));
+      return columns.some((column) => {
+        const value = extractCellValue(submission.answers, column.id, column.type);
+        return value.toLowerCase().includes(query);
+      });
     });
-  }, [rows, searchQuery]);
+  }, [submissions, searchQuery, columns]);
 
   if (!publicToken) {
     return <Navigate to="/" replace />;
@@ -138,13 +131,13 @@ export const PublicSubmissionSharedPage = () => {
               </div>
               <div className="relative w-full lg:max-w-sm">
                 <Search className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" />
-                <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="pl-9" placeholder="バンド名や内容で検索" />
+                <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="pl-9" placeholder={`${recordLabel}や内容で検索`} />
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-              <span>件数: {filteredRows.length}件</span>
+              <span>件数: {filteredSubmissions.length}件</span>
               <span>列数: {columns.length + 2}列</span>
               <Link to={`/public/lives/${publicToken}`} className="underline underline-offset-4">公開フォームに戻る</Link>
             </div>
@@ -158,9 +151,9 @@ export const PublicSubmissionSharedPage = () => {
           <CardContent className="space-y-3">
             {submissionId && submissions.length === 0 ? (
               <p className="text-sm text-muted-foreground">指定された提出データは公開されていないか、見つかりませんでした。</p>
-            ) : rows.length === 0 ? (
+            ) : submissions.length === 0 ? (
               <p className="text-sm text-muted-foreground">公開可能な提出データがありません。</p>
-            ) : filteredRows.length === 0 ? (
+            ) : filteredSubmissions.length === 0 ? (
               <p className="text-sm text-muted-foreground">検索条件に一致する提出がありません。</p>
             ) : (
               <div className="rounded-lg border">
@@ -168,21 +161,21 @@ export const PublicSubmissionSharedPage = () => {
                   <Table className="min-w-max">
                     <TableHeader className="sticky top-0 z-20 bg-background">
                       <TableRow>
-                        <TableHead className="sticky left-0 z-30 w-[180px] bg-background">{mainDisplayLabel}</TableHead>
+                        <TableHead className="sticky left-0 z-30 w-[180px] bg-background">{recordLabel}</TableHead>
                         <TableHead className="w-[170px] bg-background">提出日時</TableHead>
                         {columns.map((column) => (
-                          <TableHead key={column} className="w-[220px] whitespace-normal bg-background">{column}</TableHead>
+                          <TableHead key={column.id} className="w-[220px] whitespace-normal bg-background">{column.label}</TableHead>
                         ))}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredRows.map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell className="sticky left-0 z-10 w-[180px] bg-background font-medium">{row.bandName}</TableCell>
-                          <TableCell className="w-[170px] text-muted-foreground">{row.submittedAt}</TableCell>
+                      {filteredSubmissions.map((submission) => (
+                        <TableRow key={submission.id}>
+                          <TableCell className="sticky left-0 z-10 w-[180px] bg-background font-medium">{submission.recordLabel}</TableCell>
+                          <TableCell className="w-[170px] text-muted-foreground">{formatSubmittedAt(submission.submittedAt)}</TableCell>
                           {columns.map((column) => (
-                            <TableCell key={`${row.id}-${column}`} className="w-[220px] whitespace-pre-line align-top text-sm">
-                              {row.values.get(column) ?? '未入力'}
+                            <TableCell key={`${submission.id}-${column.id}`} className="w-[220px] whitespace-pre-line align-top text-sm">
+                              {extractCellValue(submission.answers, column.id, column.type)}
                             </TableCell>
                           ))}
                         </TableRow>
@@ -200,53 +193,46 @@ export const PublicSubmissionSharedPage = () => {
   );
 };
 
-function buildFieldLabelMap(config: SettingSheetConfigResponse | null) {
-  const map = new Map<string, string>();
+function collectColumns(config: SettingSheetConfigResponse | null, visibilityKey: 'publicVisible' | 'tableVisible'): ColumnDef[] {
+  if (!config) {
+    return [];
+  }
+  const columns: ColumnDef[] = [];
+
   const visit = (blocks: SettingSheetConfigResponse['blocks']) => {
     for (const block of blocks) {
-      map.set(block.id, block.label);
-      if (block.fields.length > 0) {
+      if (block.type === 'SECTION') {
         visit(block.fields);
+        continue;
+      }
+      if (block[visibilityKey]) {
+        columns.push({ id: block.id, label: block.label, type: block.type });
       }
     }
   };
 
-  if (config) {
-    visit(config.blocks);
-  }
+  visit(config.blocks);
+  return columns;
+}
 
-  return map;
+function extractCellValue(
+  answers: SettingSheetSubmissionAnswerResponse[],
+  fieldId: string,
+  blockType: SettingSheetBlock['type'],
+): string {
+  const answer = answers.find((a) => a.fieldId === fieldId);
+  if (!answer) {
+    return '未入力';
+  }
+  if (blockType === 'REPEATABLE_GROUP') {
+    if (answer.items.length === 0) {
+      return '未入力';
+    }
+    return `${answer.items.length}件`;
+  }
+  return answer.values.length > 0 ? answer.values.join(' / ') : '未入力';
 }
 
 function formatSubmittedAt(value: string) {
   return new Intl.DateTimeFormat('ja-JP', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
-}
-
-function flattenAnswers(
-  answers: PublicSettingSheetSubmissionDetailResponse['answers'],
-  labelMap: Map<string, string>,
-  parentLabel = '',
-) {
-  const values = new Map<string, string>();
-
-  for (const answer of answers) {
-    const label = labelMap.get(answer.fieldId) ?? answer.fieldId;
-    const fullLabel = parentLabel ? `${parentLabel} / ${label}` : label;
-
-    if (answer.items.length > 0) {
-      const lines = answer.items.map((item, itemIndex) => {
-        const nested = flattenAnswers(item.answers, labelMap);
-        const content = Array.from(nested.entries())
-          .map(([nestedLabel, value]) => `${nestedLabel}: ${value}`)
-          .join('\n');
-        return `${itemIndex + 1}件目\n${content || '未入力'}`;
-      });
-      values.set(fullLabel, lines.join('\n'));
-      continue;
-    }
-
-    values.set(fullLabel, answer.values.length > 0 ? answer.values.join(' / ') : '未入力');
-  }
-
-  return values;
 }

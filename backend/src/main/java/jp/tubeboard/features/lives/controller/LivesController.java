@@ -84,6 +84,12 @@ public class LivesController {
         return ResponseEntity.ok(livesService.listOwnedSettingSheetSubmissions(id));
     }
 
+    @GetMapping("/{id}/setting-sheet/submissions/details")
+    public ResponseEntity<List<PublicSettingSheetSubmissionDetailResponse>> listSettingSheetSubmissionDetails(
+            @PathVariable(name = "id") UUID id) {
+        return ResponseEntity.ok(livesService.listOwnedSettingSheetSubmissionDetails(id));
+    }
+
     @GetMapping("/{id}/setting-sheet/submissions/{submissionId}")
     public ResponseEntity<PublicSettingSheetSubmissionDetailResponse> getSettingSheetSubmission(
             @PathVariable(name = "id") UUID id,

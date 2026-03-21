@@ -78,7 +78,7 @@ class PublicLivesControllerIntegrationTest {
                                                 .content(objectMapper.writeValueAsString(
                                                                 createSubmissionRequest("Original Band"))))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.bandName").value("Original Band"))
+                                .andExpect(jsonPath("$.recordLabel").value("Original Band"))
                                 .andReturn();
 
                 JsonNode submitJson = objectMapper.readTree(submitResult.getResponse().getContentAsString());
@@ -113,11 +113,11 @@ class PublicLivesControllerIntegrationTest {
                                 .content(objectMapper.writeValueAsString(createSubmissionRequest("Updated Band"))))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.id").value(submissionId.toString()))
-                                .andExpect(jsonPath("$.bandName").value("Updated Band"));
+                                .andExpect(jsonPath("$.recordLabel").value("Updated Band"));
 
                 SettingSheetSubmission savedSubmission = settingSheetSubmissionRepository.findById(submissionId)
                                 .orElseThrow();
-                assertThat(savedSubmission.getBandName()).isEqualTo("Updated Band");
+                assertThat(savedSubmission.getRecordLabel()).isEqualTo("Updated Band");
                 assertThat(savedSubmission.getPayloadJson()).contains("Updated Band");
         }
 
@@ -170,7 +170,7 @@ class PublicLivesControllerIntegrationTest {
                                 .contentType(APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.bandName").value("Recursive Band"));
+                                .andExpect(jsonPath("$.recordLabel").value("Recursive Band"));
         }
 
         @Test
@@ -185,7 +185,7 @@ class PublicLivesControllerIntegrationTest {
                                 .contentType(APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.bandName").value("Display Name"));
+                                .andExpect(jsonPath("$.recordLabel").value("Display Name"));
         }
 
         @Test
@@ -256,6 +256,7 @@ class PublicLivesControllerIntegrationTest {
                                                 "",
                                                 false,
                                                 false,
+                                                false,
                                                 true,
                                                 false,
                                                 "outline",
@@ -286,6 +287,7 @@ class PublicLivesControllerIntegrationTest {
                                                 false,
                                                 false,
                                                 false,
+                                                false,
                                                 "plain",
                                                 "plain",
                                                 List.of(),
@@ -298,6 +300,7 @@ class PublicLivesControllerIntegrationTest {
                                                                 "SHORT_TEXT",
                                                                 "バンド名",
                                                                 "",
+                                                                false,
                                                                 false,
                                                                 false,
                                                                 true,
@@ -332,6 +335,7 @@ class PublicLivesControllerIntegrationTest {
                                                 false,
                                                 false,
                                                 false,
+                                                false,
                                                 "plain",
                                                 "plain",
                                                 List.of(),
@@ -345,6 +349,7 @@ class PublicLivesControllerIntegrationTest {
                                                                 "バンド名",
                                                                 "",
                                                                 true,
+                                                                false,
                                                                 false,
                                                                 true,
                                                                 false,
@@ -379,6 +384,7 @@ class PublicLivesControllerIntegrationTest {
                                                                 false,
                                                                 false,
                                                                 false,
+                                                                false,
                                                                 "plain",
                                                                 "plain",
                                                                 List.of(),
@@ -391,6 +397,7 @@ class PublicLivesControllerIntegrationTest {
                                                                                 "SHORT_TEXT",
                                                                                 "バンド名",
                                                                                 "",
+                                                                                false,
                                                                                 false,
                                                                                 false,
                                                                                 true,
@@ -416,6 +423,7 @@ class PublicLivesControllerIntegrationTest {
                                                                 false,
                                                                 false,
                                                                 false,
+                                                                false,
                                                                 "subtle",
                                                                 "outline",
                                                                 List.of(),
@@ -428,6 +436,7 @@ class PublicLivesControllerIntegrationTest {
                                                                                 "SHORT_TEXT",
                                                                                 "氏名",
                                                                                 "",
+                                                                                false,
                                                                                 false,
                                                                                 false,
                                                                                 true,
@@ -453,6 +462,7 @@ class PublicLivesControllerIntegrationTest {
                                                                 false,
                                                                 false,
                                                                 false,
+                                                                false,
                                                                 "subtle",
                                                                 "outline",
                                                                 List.of(),
@@ -465,6 +475,7 @@ class PublicLivesControllerIntegrationTest {
                                                                                 "SHORT_TEXT",
                                                                                 "曲名",
                                                                                 "",
+                                                                                false,
                                                                                 false,
                                                                                 false,
                                                                                 true,
@@ -498,6 +509,7 @@ class PublicLivesControllerIntegrationTest {
                                                                 "",
                                                                 false,
                                                                 false,
+                                                                false,
                                                                 true,
                                                                 false,
                                                                 "outline",
@@ -515,6 +527,7 @@ class PublicLivesControllerIntegrationTest {
                                                                 "LONG_TEXT",
                                                                 "備考",
                                                                 "",
+                                                                false,
                                                                 false,
                                                                 false,
                                                                 false,

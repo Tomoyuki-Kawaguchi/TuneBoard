@@ -45,10 +45,12 @@ public class SettingSheetSubmissionService {
     public String resolveSubmissionSummary(SettingSheetConfigResponse config,
             PublicSettingSheetSubmissionRequest request,
             String fallback) {
-        String configuredValue = findFirstValueByFieldId(config.blocks(), request.answers(),
-                config.mainDisplayFieldId());
-        if (!configuredValue.isBlank()) {
-            return configuredValue;
+        String fieldId = config.recordLabelFieldId();
+        if (fieldId != null && !fieldId.isBlank()) {
+            String value = findFirstValueByFieldId(config.blocks(), request.answers(), fieldId);
+            if (!value.isBlank()) {
+                return value;
+            }
         }
         String firstAnswer = findFirstSubmittedValue(config.blocks(), request.answers());
         return firstAnswer.isBlank() ? fallback + " の回答" : firstAnswer;
@@ -274,9 +276,6 @@ public class SettingSheetSubmissionService {
 
     private String findFirstValueByFieldId(List<FormBlockResponse> blocks, List<FieldAnswerRequest> answers,
             String fieldId) {
-        if (safeText(fieldId).isBlank()) {
-            return "";
-        }
         Map<String, FieldAnswerRequest> answerMap = toAnswerMap(answers);
         for (FormBlockResponse block : blocks) {
             if (Boolean.TRUE.equals(block.hidden())) {
