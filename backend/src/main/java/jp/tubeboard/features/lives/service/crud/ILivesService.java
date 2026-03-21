@@ -40,6 +40,8 @@ public interface ILivesService {
 
         List<SettingSheetSubmissionResponse> listOwnedSettingSheetSubmissions(UUID liveId);
 
+        List<PublicSettingSheetSubmissionDetailResponse> listOwnedSettingSheetSubmissionDetails(UUID liveId);
+
         PublicSettingSheetSubmissionDetailResponse getOwnedSettingSheetSubmission(UUID liveId, UUID submissionId);
 
         PublicSettingSheetSubmissionDetailResponse getPublicSettingSheetSubmission(String publicToken,

@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildPublicLiveUrl,
-  collectMainDisplayFieldCandidates,
   createLiveFormFromResponse,
   formatDeadline,
   formatLiveDate,
   formatOptionalText,
+  normalizeSettingSheetConfig,
   toLiveCreatePayload,
   toLiveUpdatePayload,
   type LiveResponse,
@@ -83,53 +83,39 @@ describe('lives type utilities', () => {
     );
   });
 
-  it('主表示項目に使える候補を入れ子を含めて収集する', () => {
-    const candidates = collectMainDisplayFieldCandidates([
-      {
-        id: 'section-1',
-        type: 'SECTION',
-        label: '基本情報',
-        description: '',
-        hidden: false,
-        publicVisible: false,
-        required: false,
-        collapsible: false,
-        appearance: 'plain',
-        itemAppearance: 'plain',
-        options: [],
-        minItems: 0,
-        addButtonLabel: '',
-        entryTitle: '',
-        titleSourceFieldId: '',
-        fields: [
-          {
-            id: 'display-name',
-            type: 'SHORT_TEXT',
-            label: '表示名',
-            description: '',
-            hidden: false,
-            publicVisible: false,
-            required: true,
-            collapsible: false,
-            appearance: 'outline',
-            itemAppearance: 'plain',
-            options: [],
-            minItems: 0,
-            addButtonLabel: '',
-            entryTitle: '',
-            titleSourceFieldId: '',
-            fields: [],
-            layout: { width: 'half', optionColumns: 1, optionFitContent: false },
-            optionSource: null,
-          },
-        ],
-        layout: { width: 'full', optionColumns: 1, optionFitContent: false },
-        optionSource: null,
-      },
-    ]);
+  it('normalizeSettingSheetConfig はセクションの publicVisible/tableVisible を保持する', () => {
+    const normalized = normalizeSettingSheetConfig({
+      title: 'test',
+      description: '',
+      submitButtonLabel: '送信',
+      publicSubmissionEnabled: false,
+      recordLabelFieldId: '',
+      blocks: [
+        {
+          id: 'section-1',
+          type: 'SECTION',
+          label: '見出し',
+          description: '',
+          hidden: false,
+          publicVisible: true,
+          tableVisible: true,
+          required: false,
+          collapsible: false,
+          appearance: 'plain',
+          itemAppearance: 'plain',
+          options: [],
+          minItems: 0,
+          addButtonLabel: '',
+          entryTitle: '',
+          titleSourceFieldId: '',
+          fields: [],
+          layout: { width: 'full', optionColumns: 1, optionFitContent: false },
+          optionSource: null,
+        },
+      ],
+    });
 
-    expect(candidates).toEqual([
-      { value: 'display-name', label: '基本情報 / 表示名' },
-    ]);
+    expect(normalized.blocks[0].publicVisible).toBe(true);
+    expect(normalized.blocks[0].tableVisible).toBe(true);
   });
 });

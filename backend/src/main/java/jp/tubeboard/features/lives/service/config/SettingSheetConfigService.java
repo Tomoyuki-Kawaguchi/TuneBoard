@@ -109,11 +109,7 @@ public class SettingSheetConfigService {
                                         parsed.publicSubmissionEnabled() == null
                                                         ? defaults.publicSubmissionEnabled()
                                                         : parsed.publicSubmissionEnabled(),
-                                        helper.normalizeMainDisplayFieldId(parsed.mainDisplayFieldId(),
-                                                        helper.normalizeBlocks(
-                                                                        helper.mapToFormBlockRequests(parsed.blocks()),
-                                                                        defaults),
-                                                        defaults.mainDisplayFieldId()),
+                                        formBuilderHelper.safeText(parsed.recordLabelFieldId()),
                                         helper.normalizeBlocks(helper.mapToFormBlockRequests(parsed.blocks()),
                                                         defaults));
                 } catch (JsonProcessingException ex) {
@@ -133,15 +129,13 @@ public class SettingSheetConfigService {
                 SettingSheetConfigResponse defaults = defaultSettingSheetConfig();
                 Boolean publicSubmissionEnabled = resolvePublicSubmissionEnabled(request,
                                 defaults.publicSubmissionEnabled());
-                List<FormBlockResponse> normalizedBlocks = helper.normalizeBlocks(request.blocks(), defaults);
                 return new SettingSheetConfigResponse(
                                 formBuilderHelper.safeTextOrDefault(request.title(), "バンド申請フォーム"),
                                 formBuilderHelper.safeTextOrDefault(request.description(), "出演情報、メンバー、演奏曲を入力してください。"),
                                 formBuilderHelper.safeTextOrDefault(request.submitButtonLabel(), "送信する"),
                                 publicSubmissionEnabled,
-                                helper.normalizeMainDisplayFieldId(request, normalizedBlocks,
-                                                defaults.mainDisplayFieldId()),
-                                normalizedBlocks);
+                                formBuilderHelper.safeText(request.recordLabelFieldId()),
+                                helper.normalizeBlocks(request.blocks(), defaults));
         }
 
         private Boolean resolvePublicSubmissionEnabled(SettingSheetConfigUpdateRequest request, Boolean fallback) {

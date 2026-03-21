@@ -79,7 +79,7 @@ public class LiveServiceHelper {
                 SettingSheetSubmission target = submission == null
                                 ? SettingSheetSubmission.builder().live(live).build()
                                 : submission;
-                target.setBandName(summary);
+                target.setRecordLabel(summary);
                 target.setSubmissionStatus(SettingSheetConstants.SUBMISSION_STATUS);
                 target.setPayloadJson(settingSheetSubmissionService.writeSubmissionPayload(normalizedRequest));
 
@@ -102,7 +102,7 @@ public class LiveServiceHelper {
         public SettingSheetSubmissionResponse toSubmissionResponse(SettingSheetSubmission submission) {
                 return new SettingSheetSubmissionResponse(
                                 submission.getId(),
-                                submission.getBandName(),
+                                submission.getRecordLabel(),
                                 submission.getSubmissionStatus(),
                                 submission.getCreatedAt());
         }

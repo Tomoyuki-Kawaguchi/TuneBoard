@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Copy, ExternalLink, Music2, Search } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,12 +22,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { apiClient } from '@/lib/api/client';
 import {
   formatLiveDate,
-  resolveMainDisplayFieldLabel,
+  isSectionBlock,
+  isRepeatableGroupBlock,
+  resolveRecordLabel,
   type LiveResponse,
   type PublicSettingSheetSubmissionDetailResponse,
+  type SettingSheetBlock,
   type SettingSheetConfigResponse,
-  type SettingSheetSubmissionResponse,
+  type SettingSheetSubmissionAnswerResponse,
 } from './types/type';
+
+interface ColumnDef {
+  id: string;
+  label: string;
+  path: string[];
+  type: SettingSheetBlock['type'];
+}
 
 interface DuplicateSongCandidate {
   key: string;
@@ -40,12 +50,10 @@ export const LiveSubmissionsPage = () => {
   const { tenantId, liveId } = useParams<{ tenantId: string; liveId: string }>();
   const [live, setLive] = useState<LiveResponse | null>(null);
   const [config, setConfig] = useState<SettingSheetConfigResponse | null>(null);
-  const [submissions, setSubmissions] = useState<SettingSheetSubmissionResponse[]>([]);
-  const [detailsById, setDetailsById] = useState<Record<string, PublicSettingSheetSubmissionDetailResponse>>({});
+  const [details, setDetails] = useState<PublicSettingSheetSubmissionDetailResponse[]>([]);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string>('');
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAnalyzingDuplicates, setIsAnalyzingDuplicates] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -58,10 +66,10 @@ export const LiveSubmissionsPage = () => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [liveResponse, configResponse, listResponse] = await Promise.all([
+        const [liveResponse, configResponse, detailsResponse] = await Promise.all([
           apiClient.get<LiveResponse>(`/lives/${liveId}`),
           apiClient.get<SettingSheetConfigResponse>(`/lives/${liveId}/setting-sheet/config`),
-          apiClient.get<SettingSheetSubmissionResponse[]>(`/lives/${liveId}/setting-sheet/submissions`),
+          apiClient.get<PublicSettingSheetSubmissionDetailResponse[]>(`/lives/${liveId}/setting-sheet/submissions/details`),
         ]);
 
         if (!liveResponse || !configResponse) {
@@ -74,7 +82,7 @@ export const LiveSubmissionsPage = () => {
 
         setLive(liveResponse);
         setConfig(configResponse);
-        setSubmissions(listResponse ?? []);
+        setDetails(detailsResponse ?? []);
       } catch {
         if (!cancelled) {
           toast.error('提出情報の取得に失敗しました', { position: 'top-center' });
@@ -93,16 +101,24 @@ export const LiveSubmissionsPage = () => {
     };
   }, [liveId]);
 
-  const labelMap = useMemo(() => buildFieldLabelMap(config), [config]);
-  const mainDisplayLabel = useMemo(() => config ? resolveMainDisplayFieldLabel(config) : 'メイン表示', [config]);
-  const duplicateSongs = useMemo(() => collectDuplicateSongs(Object.values(detailsById)), [detailsById]);
-  const filteredSubmissions = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return submissions;
-    }
+  const recordLabel = useMemo(() => resolveRecordLabel(config), [config]);
+  const tableColumns = useMemo(() => collectColumns(config, 'publicVisible'), [config]);
+  const duplicateSongs = useMemo(() => collectDuplicateSongs(details), [details]);
+
+  const hasVisibleColumns = tableColumns.length > 0;
+
+  const filteredDetails = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    return submissions.filter((submission) => submission.bandName.toLowerCase().includes(query));
-  }, [searchQuery, submissions]);
+    if (!query) {
+      return details;
+    }
+    return details.filter((detail) => {
+      return tableColumns.some((column) => {
+        const value = extractCellValue(detail.answers, column.path, column.type);
+        return value.toLowerCase().includes(query);
+      });
+    });
+  }, [searchQuery, details, tableColumns]);
 
   if (!tenantId || !liveId) {
     return <Navigate to="/tenants" replace />;
@@ -116,49 +132,9 @@ export const LiveSubmissionsPage = () => {
     return <Navigate to={`/tenants/${tenantId}/lives`} replace />;
   }
 
-  const selectedSubmission = filteredSubmissions.find((submission) => submission.id === selectedSubmissionId)
-    ?? submissions.find((submission) => submission.id === selectedSubmissionId)
-    ?? null;
-  const selectedDetail = selectedSubmission ? detailsById[selectedSubmission.id] ?? null : null;
+  const selectedDetail = details.find((d) => d.id === selectedSubmissionId) ?? null;
   const sharedListUrl = `${window.location.origin}/public/lives/${live.publicToken}/submissions/shared`;
   const buildEditFormUrl = (submissionId: string) => `${window.location.origin}/public/lives/${live.publicToken}/submissions/${submissionId}`;
-
-  const openDetail = async (submissionId: string) => {
-    setSelectedSubmissionId(submissionId);
-    setIsDetailDialogOpen(true);
-    if (detailsById[submissionId]) {
-      return;
-    }
-    try {
-      const detail = await apiClient.get<PublicSettingSheetSubmissionDetailResponse>(`/lives/${liveId}/setting-sheet/submissions/${submissionId}`);
-      if (detail) {
-        setDetailsById((current) => ({ ...current, [submissionId]: detail }));
-      }
-    } catch {
-      toast.error('提出詳細の取得に失敗しました', { position: 'top-center' });
-    }
-  };
-
-  const analyzeDuplicates = async () => {
-    setIsAnalyzingDuplicates(true);
-    try {
-      const missingIds = submissions.map((submission) => submission.id).filter((id) => !detailsById[id]);
-      if (missingIds.length > 0) {
-        const detailPairs = await Promise.all(
-          missingIds.map(async (id) => {
-            const detail = await apiClient.get<PublicSettingSheetSubmissionDetailResponse>(`/lives/${liveId}/setting-sheet/submissions/${id}`);
-            return detail ? [id, detail] : null;
-          }),
-        );
-        const loaded = Object.fromEntries(detailPairs.filter((pair): pair is [string, PublicSettingSheetSubmissionDetailResponse] => pair !== null));
-        setDetailsById((current) => ({ ...current, ...loaded }));
-      }
-    } catch {
-      toast.error('曲の被り解析に失敗しました', { position: 'top-center' });
-    } finally {
-      setIsAnalyzingDuplicates(false);
-    }
-  };
 
   const copySharedLink = async () => {
     try {
@@ -169,11 +145,9 @@ export const LiveSubmissionsPage = () => {
     }
   };
 
-
-  const toEditForm = async (submissionId: string) => {
-    const editFormUrl = buildEditFormUrl(submissionId);
+  const copyEditLink = async (submissionId: string) => {
     try {
-      await navigator.clipboard.writeText(editFormUrl);
+      await navigator.clipboard.writeText(buildEditFormUrl(submissionId));
       toast.success('編集リンクをコピーしました', { position: 'top-center' });
     } catch {
       toast.error('リンクのコピーに失敗しました', { position: 'top-center' });
@@ -213,7 +187,7 @@ export const LiveSubmissionsPage = () => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <h1 className="text-xl font-semibold sm:text-2xl">提出済みSettingSheet</h1>
-              <p className="text-sm text-muted-foreground">{live.name} / {formatLiveDate(live.date)} / 全{submissions.length}件</p>
+              <p className="text-sm text-muted-foreground">{live.name} / {formatLiveDate(live.date)} / 全{details.length}件</p>
             </div>
             <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link to={`/tenants/${tenantId}/lives/${liveId}`}>
@@ -233,7 +207,7 @@ export const LiveSubmissionsPage = () => {
                 <Music2 className="size-5" />
                 <CardTitle className="text-base sm:text-lg">曲の被り候補</CardTitle>
               </div>
-              <p className="text-sm text-muted-foreground">候補だけを先に一覧化して確認できます。</p>
+              <p className="text-sm text-muted-foreground">全提出から自動的に被り候補を検出します。</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={copySharedLink}>
@@ -245,9 +219,6 @@ export const LiveSubmissionsPage = () => {
                   <ExternalLink className="size-4" />
                   共有一覧を開く
                 </a>
-              </Button>
-              <Button variant="outline" size="sm" onClick={analyzeDuplicates} disabled={isAnalyzingDuplicates || submissions.length === 0}>
-                {isAnalyzingDuplicates ? '解析中...' : '被り候補を解析'}
               </Button>
             </div>
           </div>
@@ -262,7 +233,7 @@ export const LiveSubmissionsPage = () => {
                   <TableRow>
                     <TableHead>曲名</TableHead>
                     <TableHead>アーティスト</TableHead>
-                    <TableHead>重複バンド</TableHead>
+                    <TableHead>重複提出</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -285,71 +256,85 @@ export const LiveSubmissionsPage = () => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <CardTitle className="text-base sm:text-lg">提出一覧</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {hasVisibleColumns
+                  ? '共有ページと同じ公開項目のみ表示。行をクリックすると詳細を確認できます。'
+                  : '共有ページで公開する項目を設定すると、その項目だけがここでも一覧表示されます。'}
+              </p>
             </div>
             <div className="relative w-full sm:max-w-sm">
               <Search className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
-              <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="pl-8" placeholder="バンド名で検索" />
+              <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="pl-8" placeholder="公開項目で検索" disabled={!hasVisibleColumns} />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {filteredSubmissions.length === 0 ? (
+          {!hasVisibleColumns ? (
+            <p className="text-sm text-muted-foreground">共有リンクで公開する項目が設定されていません。管理画面で「共有に表示」をONにした項目だけがここに表示されます。</p>
+          ) : filteredDetails.length === 0 ? (
             <p className="text-sm text-muted-foreground">該当する提出はありません。</p>
           ) : (
             <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{mainDisplayLabel}</TableHead>
-                    <TableHead>状態</TableHead>
-                    <TableHead>提出日時</TableHead>
-                    <TableHead className="text-right">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSubmissions.map((submission) => (
-                    <TableRow key={submission.id}>
-                      <TableCell className="font-medium">{submission.bandName}</TableCell>
-                      <TableCell><Badge variant="secondary">{submission.submissionStatus}</Badge></TableCell>
-                      <TableCell className="text-muted-foreground">{formatSubmittedAt(submission.submittedAt)}</TableCell>
-                      <TableCell className="flex gap-2 justify-end">
-                        <Button variant="outline" size="sm" onClick={() => openDetail(submission.id)}>詳細</Button>
-                        <Button variant="outline" size="sm" onClick={() => toEditForm(submission.id)}><Copy/></Button>
-                      </TableCell>
+              <ScrollArea className="h-[70vh] w-full">
+                <Table className="min-w-max">
+                  <TableHeader className="sticky top-0 z-20 bg-background">
+                    <TableRow>
+                      {tableColumns.map((column) => (
+                        <TableHead key={column.id} className="w-[220px] whitespace-normal bg-background">{column.label}</TableHead>
+                      ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDetails.map((detail) => (
+                      <TableRow
+                        key={detail.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => { setSelectedSubmissionId(detail.id); setIsDetailDialogOpen(true); }}
+                      >
+                        {tableColumns.map((column) => (
+                          <TableCell key={`${detail.id}-${column.id}`} className="w-[220px] whitespace-pre-line align-top text-sm">
+                            {extractCellValue(detail.answers, column.path, column.type)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
             </div>
           )}
         </CardContent>
       </Card>
 
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-3xl">
+        <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-5xl">
           <DialogHeader>
             <DialogTitle>提出詳細</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh] pr-1">
-            {!selectedSubmission ? (
+          <ScrollArea className="max-h-[68vh] pr-3">
+            {!selectedDetail ? (
               <p className="text-sm text-muted-foreground">提出を選択してください。</p>
-            ) : !selectedDetail ? (
-              <p className="text-sm text-muted-foreground">提出内容を読み込み中です...</p>
             ) : (
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">{mainDisplayLabel}</p>
-                  <p className="font-semibold">{selectedDetail.bandName}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">提出日時: {formatSubmittedAt(selectedDetail.submittedAt)}</p>
+                <div className="grid gap-3 rounded-xl border bg-muted/20 p-4 md:grid-cols-[minmax(0,1.6fr)_repeat(2,minmax(0,1fr))]">
+                  <SummaryItem label={recordLabel} value={selectedDetail.recordLabel} />
+                  <SummaryItem label="状態" value={<Badge variant="secondary">{selectedDetail.submissionStatus}</Badge>} />
+                  <SummaryItem label="提出日時" value={formatSubmittedAt(selectedDetail.submittedAt)} />
                 </div>
                 <Separator />
-                <div className="space-y-3">
-                  {renderAnswers(selectedDetail.answers, labelMap, selectedDetail.id)}
+                <div className="space-y-4">
+                  {config ? renderSubmissionBlocks(config.blocks, selectedDetail.answers, selectedDetail.id) : null}
                 </div>
               </div>
             )}
           </ScrollArea>
-          <DialogFooter>
+          <DialogFooter className="flex-row justify-between gap-2 sm:justify-between">
+            {selectedDetail ? (
+              <Button variant="outline" size="sm" onClick={() => copyEditLink(selectedDetail.id)}>
+                <Copy className="size-4" />
+                編集リンクをコピー
+              </Button>
+            ) : <span />}
             <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>閉じる</Button>
           </DialogFooter>
         </DialogContent>
@@ -358,23 +343,75 @@ export const LiveSubmissionsPage = () => {
   );
 };
 
-function buildFieldLabelMap(config: SettingSheetConfigResponse | null) {
-  const map = new Map<string, string>();
+function collectColumns(config: SettingSheetConfigResponse | null, visibilityKey: 'publicVisible' | 'tableVisible'): ColumnDef[] {
+  if (!config) {
+    return [];
+  }
+  const columns: ColumnDef[] = [];
 
-  const visit = (blocks: SettingSheetConfigResponse['blocks']) => {
+  const visit = (blocks: SettingSheetConfigResponse['blocks'], labelTrail: string[], answerPath: string[]) => {
     for (const block of blocks) {
-      map.set(block.id, block.label);
+      const nextLabelTrail = isSectionBlock(block.type) ? [...labelTrail, block.label] : labelTrail;
+      const nextAnswerPath = isSectionBlock(block.type) ? answerPath : [...answerPath, block.id];
+
+      if (block[visibilityKey] && !isSectionBlock(block.type)) {
+        columns.push({
+          id: block.id,
+          label: [...labelTrail, block.label].join(' / '),
+          path: [...answerPath, block.id],
+          type: block.type,
+        });
+      }
+
       if (block.fields.length > 0) {
-        visit(block.fields);
+        visit(block.fields, nextLabelTrail, nextAnswerPath);
       }
     }
   };
 
-  if (config) {
-    visit(config.blocks);
+  visit(config.blocks, [], []);
+  return columns;
+}
+
+function extractCellValue(
+  answers: SettingSheetSubmissionAnswerResponse[],
+  path: string[],
+  blockType: SettingSheetBlock['type'],
+): string {
+  if (path.length === 0) {
+    return '未入力';
   }
 
-  return map;
+  const [currentId, ...restPath] = path;
+  const answer = answers.find((entry) => entry.fieldId === currentId);
+  if (!answer) {
+    return '未入力';
+  }
+
+  if (restPath.length === 0) {
+    if (blockType === 'REPEATABLE_GROUP') {
+      if (answer.items.length === 0) {
+        return '未入力';
+      }
+      return `${answer.items.length}件`;
+    }
+
+    return answer.values.length > 0 ? answer.values.join(' / ') : '未入力';
+  }
+
+  const nestedValues = answer.items
+    .map((item) => extractCellValue(item.answers, restPath, blockType))
+    .filter((value) => value !== '未入力');
+
+  if (nestedValues.length === 0) {
+    if (isRepeatableGroupBlock(blockType)) {
+      return '未入力';
+    }
+
+    return '未入力';
+  }
+
+  return nestedValues.join('\n');
 }
 
 function collectDuplicateSongs(submissions: PublicSettingSheetSubmissionDetailResponse[]): DuplicateSongCandidate[] {
@@ -392,9 +429,9 @@ function collectDuplicateSongs(submissions: PublicSettingSheetSubmissionDetailRe
 
       const existing = songMap.get(song.key);
       if (existing) {
-        existing.bands.add(submission.bandName);
+        existing.bands.add(submission.recordLabel);
       } else {
-        songMap.set(song.key, { title: song.title, artist: song.artist, bands: new Set([submission.bandName]) });
+        songMap.set(song.key, { title: song.title, artist: song.artist, bands: new Set([submission.recordLabel]) });
       }
     }
   }
@@ -459,36 +496,85 @@ function formatSubmittedAt(value: string) {
   return new Intl.DateTimeFormat('ja-JP', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
-function renderAnswers(
+function renderSubmissionBlocks(
+  blocks: SettingSheetBlock[],
   answers: PublicSettingSheetSubmissionDetailResponse['answers'],
-  labelMap: Map<string, string>,
   path: string,
 ) {
-  return answers.map((answer, index) => {
-    const key = `${path}-${answer.fieldId}-${index}`;
-    const label = labelMap.get(answer.fieldId) ?? answer.fieldId;
+  const answerMap = new Map(answers.map((answer) => [answer.fieldId, answer]));
 
-    if (answer.items.length > 0) {
+  return blocks.map((block, index) => {
+    const key = `${path}-${block.id}-${index}`;
+    const answer = answerMap.get(block.id);
+
+    if (isSectionBlock(block.type)) {
       return (
-        <div key={key} className="space-y-2 rounded-md border p-3">
-          <p className="font-medium">{label}</p>
-          <div className="space-y-2">
-            {answer.items.map((item, itemIndex) => (
-              <div key={`${key}-item-${itemIndex}`} className="rounded-md bg-muted/40 p-3">
-                <p className="mb-2 text-xs text-muted-foreground">{itemIndex + 1}件目</p>
-                <div className="space-y-2">{renderAnswers(item.answers, labelMap, `${key}-item-${itemIndex}`)}</div>
-              </div>
-            ))}
+        <section key={key} className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold">{block.label}</h3>
+            {block.description ? <p className="text-sm text-muted-foreground">{block.description}</p> : null}
           </div>
-        </div>
+          {block.fields.length > 0 ? <div className="grid gap-4 md:grid-cols-2">{renderSubmissionBlocks(block.fields, answers, key)}</div> : null}
+        </section>
+      );
+    }
+
+    if (isRepeatableGroupBlock(block.type)) {
+      return (
+        <section key={key} className="space-y-4 rounded-xl border bg-card p-5 shadow-sm md:col-span-2">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold">{block.label}</h3>
+              {block.description ? <p className="text-sm text-muted-foreground">{block.description}</p> : null}
+            </div>
+            <Badge variant="outline">{answer?.items.length ?? 0}件</Badge>
+          </div>
+          {!answer || answer.items.length === 0 ? (
+            <p className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">未入力</p>
+          ) : (
+            <div className="space-y-4">
+              {answer.items.map((item, itemIndex) => (
+                <div key={`${key}-item-${itemIndex}`} className="space-y-4 rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium">{block.entryTitle || block.label} {itemIndex + 1}</p>
+                    <span className="text-xs text-muted-foreground">{itemIndex + 1}件目</span>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">{renderSubmissionBlocks(block.fields, item.answers, `${key}-item-${itemIndex}`)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       );
     }
 
     return (
-      <div key={key} className="rounded-md border p-3">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="mt-1 wrap-break-word font-medium">{answer.values.length > 0 ? answer.values.join(' / ') : '未入力'}</p>
+      <div key={key} className="rounded-xl border bg-card p-4 shadow-sm">
+        <p className="text-xs font-medium tracking-wide text-muted-foreground">{block.label}</p>
+        {block.description ? <p className="mt-1 text-xs leading-5 text-muted-foreground">{block.description}</p> : null}
+        <p className="mt-3 whitespace-pre-wrap wrap-break-word text-sm font-medium leading-6 text-foreground">{formatAnswerValue(answer?.values ?? [], block.type)}</p>
       </div>
     );
   });
+}
+
+function formatAnswerValue(values: string[], blockType: SettingSheetBlock['type']) {
+  if (values.length === 0) {
+    return '未入力';
+  }
+
+  if (blockType === 'BOOLEAN') {
+    return values[0] === 'true' ? 'はい' : values[0] === 'false' ? 'いいえ' : values.join(' / ');
+  }
+
+  return values.join(' / ');
+}
+
+function SummaryItem({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium tracking-wide text-muted-foreground">{label}</p>
+      <div className="text-sm font-medium text-foreground">{value}</div>
+    </div>
+  );
 }

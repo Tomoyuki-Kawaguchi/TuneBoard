@@ -3,14 +3,13 @@ import { describe, expect, it } from 'vitest';
 import type { SettingSheetConfigResponse } from '@/features/lives/types/type';
 
 import { createDefaultSettingSheetValues, toSettingSheetSubmissionPayload, validateSettingSheetForm ,createSettingSheetValuesFromSubmissionAnswers} from './types';
-import { normalizeSettingSheetConfig } from '@/features/lives/types/type';
 
 const configWithHiddenSection: SettingSheetConfigResponse = {
   title: 'test',
   description: '',
   submitButtonLabel: '送信',
   publicSubmissionEnabled: false,
-  mainDisplayFieldId: 'visible-field',
+  recordLabelFieldId: '',
   blocks: [
     {
       id: 'section-1',
@@ -108,7 +107,7 @@ describe('setting-sheet types', () => {
       description: '',
       submitButtonLabel: '送信',
       publicSubmissionEnabled: false,
-      mainDisplayFieldId: 'member-name',
+      recordLabelFieldId: '',
       blocks: [
         {
           id: 'members',
@@ -195,14 +194,5 @@ describe('setting-sheet types', () => {
       values: ['Alice'],
       items: [],
     });
-  });
-
-  it('存在しない主表示項目は正規化で解除する', () => {
-    const normalized = normalizeSettingSheetConfig({
-      ...configWithHiddenSection,
-      mainDisplayFieldId: 'deleted-field',
-    });
-
-    expect(normalized.mainDisplayFieldId).toBe('');
   });
 });

@@ -31,6 +31,16 @@ import {
 import { apiClient } from '@/lib/api/client';
 import { Badge } from '@/components/ui/badge';
 
+interface VisibilityTarget {
+  id: string;
+  label: string;
+  path: string;
+  type: SettingSheetBlock['type'];
+  publicVisible: boolean;
+  hidden: boolean;
+  typeLabel: string;
+}
+
 export const LiveManagementPage = () => {
   const { tenantId, liveId } = useParams<{ tenantId: string; liveId: string }>();
   const [live, setLive] = useState<LiveResponse | null>(null);
@@ -87,6 +97,8 @@ export const LiveManagementPage = () => {
     }
     return target.label.toLowerCase().includes(query) || target.path.toLowerCase().includes(query);
   });
+  const publicVisibleCount = visibilityTargets.filter((target) => target.publicVisible).length;
+  const visibleInFormCount = visibilityTargets.filter((target) => !target.hidden).length;
 
   const updateTargetVisibility = (blockId: string, field: 'publicVisible' | 'hidden', nextValue: boolean) => {
     setConfig((current) => {
@@ -210,6 +222,7 @@ export const LiveManagementPage = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>フォーム構成は別ページのビルダーで自由に組み立てます。現在の高機能バンド申請フォームもテンプレートとして適用できます。</p>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
               <a href={publicUrl} target="_blank" rel="noreferrer">
@@ -255,6 +268,7 @@ export const LiveManagementPage = () => {
         <CardHeader>
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">公開・非表示設定</h2>
+            <p className="text-sm text-muted-foreground">項目一覧から必要なものだけを切り替えます。変更は保存するまで反映されません。</p>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -263,8 +277,14 @@ export const LiveManagementPage = () => {
               <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">提出済みデータを公開する</p>
+                  <p className="text-xs text-muted-foreground">共有用提出確認一覧をまとめて公開します。</p>
                 </div>
                 <Switch checked={config?.publicSubmissionEnabled === true} onCheckedChange={togglePublicSubmissionEnabled} />
+              </div>
+              <div className="grid gap-3 px-4 py-3 sm:grid-cols-3">
+                <SummaryBlock label="対象項目" value={`${visibilityTargets.length}`} />
+                <SummaryBlock label="共有表示中" value={`${publicVisibleCount}`} />
+                <SummaryBlock label="フォーム表示中" value={`${visibleInFormCount}`} />
               </div>
             </div>
             <div className="relative">
@@ -294,21 +314,14 @@ export const LiveManagementPage = () => {
                     {filteredTargets.map((target) => (
                       <TableRow key={target.id}>
                         <TableCell className="whitespace-normal">
-                          <div className="space-y-1">
-                            <p className="font-medium">{target.label}</p>
-                            {!target.canControlPublicVisible ? <p className="text-xs text-muted-foreground">セクション</p> : null}
-                          </div>
+                          <p className="font-medium">{target.label}</p>
                         </TableCell>
                         <TableCell className="whitespace-normal text-muted-foreground">{target.path}</TableCell>
                         <TableCell>{target.typeLabel}</TableCell>
                         <TableCell className="text-center">
-                          {target.canControlPublicVisible ? (
-                            <div className="flex justify-center">
-                              <Switch checked={target.publicVisible} onCheckedChange={(checked) => updateTargetVisibility(target.id, 'publicVisible', checked)} />
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">対象外</span>
-                          )}
+                          <div className="flex justify-center">
+                            <Switch checked={target.publicVisible} onCheckedChange={(checked) => updateTargetVisibility(target.id, 'publicVisible', checked)} />
+                          </div>
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center">
@@ -324,6 +337,7 @@ export const LiveManagementPage = () => {
           )}
 
           <div className="flex items-center justify-between gap-3 border-t pt-4">
+            <p className="text-xs text-muted-foreground">共有に表示は公開共有ページ、フォームに表示は回答フォーム側の表示状態です。</p>
             <Button onClick={saveVisibility} disabled={isSavingVisibility}>{isSavingVisibility ? '保存中...' : '設定を保存する'}</Button>
           </div>
         </CardContent>
@@ -333,16 +347,16 @@ export const LiveManagementPage = () => {
 };
 
 function flattenVisibilityTargets(blocks: SettingSheetBlock[], parentLabel = '') {
-  const targets: Array<{ id: string; label: string; path: string; publicVisible: boolean; hidden: boolean; canControlPublicVisible: boolean; typeLabel: string }> = [];
+  const targets: VisibilityTarget[] = [];
   for (const block of blocks) {
     const path = parentLabel ? `${parentLabel} / ${block.label}` : block.label;
     targets.push({
       id: block.id,
       label: block.label,
       path,
+      type: block.type,
       publicVisible: block.publicVisible === true,
       hidden: block.hidden === true,
-      canControlPublicVisible: block.type !== 'SECTION',
       typeLabel: resolveTypeLabel(block.type),
     });
     if (block.fields.length > 0) {
@@ -389,4 +403,13 @@ function resolveTypeLabel(type: SettingSheetBlock['type']) {
     case 'REPEATABLE_GROUP':
       return '繰返し';
   }
+}
+
+function SummaryBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md bg-muted/40 px-3 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-lg font-semibold">{value}</p>
+    </div>
+  );
 }

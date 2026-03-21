@@ -45,7 +45,7 @@ const baseLive: PublicLiveResponse = {
     description: '',
     submitButtonLabel: '送信する',
     publicSubmissionEnabled: false,
-    mainDisplayFieldId: 'band-name',
+    recordLabelFieldId: 'band-name',
     blocks: [
       {
         id: 'band-name',
@@ -89,7 +89,7 @@ describe('SettingSheetForm', () => {
   it('新規送信後に提出済みシートの編集 URL へ遷移する', async () => {
     mockPost.mockResolvedValue({
       id: 'submission-1',
-      bandName: 'The Testers',
+      recordLabel: 'The Testers',
       submissionStatus: 'SUBMITTED',
       submittedAt: '2026-03-11T20:00:00',
     });
@@ -121,7 +121,7 @@ describe('SettingSheetForm', () => {
   it('提出済みシートを初期表示して更新 API を呼ぶ', async () => {
     const submission: PublicSettingSheetSubmissionDetailResponse = {
       id: 'submission-42',
-      bandName: 'Saved Band',
+      recordLabel: 'Saved Band',
       submissionStatus: 'SUBMITTED',
       submittedAt: '2026-03-11T20:00:00',
       answers: [
@@ -134,7 +134,7 @@ describe('SettingSheetForm', () => {
     };
     mockPut.mockResolvedValue({
       id: 'submission-42',
-      bandName: 'Updated Band',
+      recordLabel: 'Updated Band',
       submissionStatus: 'SUBMITTED',
       submittedAt: '2026-03-11T20:00:00',
     });
@@ -171,7 +171,7 @@ describe('SettingSheetForm', () => {
         description: '',
         submitButtonLabel: '更新する',
         publicSubmissionEnabled: false,
-        mainDisplayFieldId: 'member-name',
+        recordLabelFieldId: '',
         blocks: [
           {
             id: 'members',
@@ -250,7 +250,7 @@ describe('SettingSheetForm', () => {
 
     const submission: PublicSettingSheetSubmissionDetailResponse = {
       id: 'submission-99',
-      bandName: 'Section Band',
+      recordLabel: 'Section Band',
       submissionStatus: 'SUBMITTED',
       submittedAt: '2026-03-11T20:00:00',
       answers: [
@@ -277,7 +277,7 @@ describe('SettingSheetForm', () => {
     expect(await screen.findByDisplayValue('Alice')).toBeInTheDocument();
   });
 
-  it('BOOLEAN 項目はスイッチ操作で true を送信できる', async () => {
+  it('BOOLEAN 項目で false を選んで送信できる', async () => {
     const live: PublicLiveResponse = {
       ...baseLive,
       settingSheetConfig: {
@@ -313,7 +313,7 @@ describe('SettingSheetForm', () => {
 
     mockPost.mockResolvedValue({
       id: 'submission-bool',
-      bandName: 'The Testers',
+      recordLabel: 'The Testers',
       submissionStatus: 'SUBMITTED',
       submittedAt: '2026-03-11T20:00:00',
     });
@@ -321,7 +321,9 @@ describe('SettingSheetForm', () => {
     render(<SettingSheetForm publicToken="public-token" live={live} submission={null} />);
 
     await userEvent.type(screen.getByRole('textbox', { name: /バンド名/ }), 'The Testers');
-  await userEvent.click(screen.getByRole('switch', { name: /アンプ持ち込み/ }));
+    const switchEl = screen.getByRole('switch', { name: /アンプ持ち込み/ });
+    await userEvent.click(switchEl); // ON (true)
+    await userEvent.click(switchEl); // OFF (false) → values: ['false']
     await userEvent.click(screen.getByRole('button', { name: '送信する' }));
 
     await waitFor(() => {
@@ -334,7 +336,7 @@ describe('SettingSheetForm', () => {
           },
           {
             fieldId: 'is-bring-amp',
-            values: ['true'],
+            values: ['false'],
             items: [],
           },
         ],

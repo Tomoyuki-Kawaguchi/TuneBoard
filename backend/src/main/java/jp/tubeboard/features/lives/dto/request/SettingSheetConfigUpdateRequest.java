@@ -7,7 +7,7 @@ public record SettingSheetConfigUpdateRequest(
                 String description,
                 String submitButtonLabel,
                 Boolean publicSubmissionEnabled,
-                String mainDisplayFieldId,
+                String recordLabelFieldId,
                 List<FormBlockRequest> blocks) {
 
         public record FormBlockRequest(
@@ -17,6 +17,7 @@ public record SettingSheetConfigUpdateRequest(
                         String description,
                         Boolean hidden,
                         Boolean publicVisible,
+                        Boolean tableVisible,
                         Boolean required,
                         Boolean collapsible,
                         String appearance,

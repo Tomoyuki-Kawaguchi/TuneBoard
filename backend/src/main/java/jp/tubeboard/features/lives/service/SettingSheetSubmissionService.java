@@ -45,10 +45,12 @@ public class SettingSheetSubmissionService {
     public String resolveSubmissionSummary(SettingSheetConfigResponse config,
             PublicSettingSheetSubmissionRequest request,
             String fallback) {
-        String configuredValue = findFirstValueByFieldId(config.blocks(), request.answers(),
-                config.mainDisplayFieldId());
-        if (!configuredValue.isBlank()) {
-            return configuredValue;
+        String fieldId = config.recordLabelFieldId();
+        if (fieldId != null && !fieldId.isBlank()) {
+            String value = findFirstValueByFieldId(config.blocks(), request.answers(), fieldId);
+            if (!value.isBlank()) {
+                return value;
+            }
         }
         String firstAnswer = findFirstSubmittedValue(config.blocks(), request.answers());
         return firstAnswer.isBlank() ? fallback + " の回答" : firstAnswer;
@@ -88,6 +90,18 @@ public class SettingSheetSubmissionService {
                 filterAnswers(config.blocks(), request.answers()));
     }
 
+    public String resolveSharedRecordLabel(SettingSheetConfigResponse config,
+            PublicSettingSheetSubmissionRequest sharedRequest) {
+        String fieldId = safeText(config.recordLabelFieldId());
+        if (!fieldId.isBlank() && isSharedVisibleField(config.blocks(), fieldId, true)) {
+            String value = findFirstValueByFieldId(config.blocks(), sharedRequest.answers(), fieldId);
+            if (!value.isBlank()) {
+                return value;
+            }
+        }
+        return findFirstSubmittedValue(config.blocks(), sharedRequest.answers());
+    }
+
     private List<FieldAnswerRequest> filterAnswers(List<FormBlockResponse> blocks, List<FieldAnswerRequest> answers) {
         Map<String, FieldAnswerRequest> answerMap = toAnswerMap(answers);
         List<FieldAnswerRequest> filtered = new java.util.ArrayList<>();
@@ -119,6 +133,32 @@ public class SettingSheetSubmissionService {
         }
 
         return List.copyOf(filtered);
+    }
+
+    private boolean isSharedVisibleField(List<FormBlockResponse> blocks, String fieldId, boolean ancestorsVisible) {
+        for (FormBlockResponse block : blocks) {
+            if (Boolean.TRUE.equals(block.hidden())) {
+                continue;
+            }
+
+            if (SettingSheetConstants.BLOCK_SECTION.equals(block.type())) {
+                if (isSharedVisibleField(block.fields(), fieldId, ancestorsVisible)) {
+                    return true;
+                }
+                continue;
+            }
+
+            boolean currentVisible = ancestorsVisible && Boolean.TRUE.equals(block.publicVisible());
+            if (block.id().equals(fieldId)) {
+                return currentVisible;
+            }
+
+            if ((SettingSheetConstants.BLOCK_REPEATABLE_GROUP.equals(block.type()))
+                    && isSharedVisibleField(block.fields(), fieldId, currentVisible)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void validateAnswers(List<FormBlockResponse> blocks,
@@ -274,9 +314,6 @@ public class SettingSheetSubmissionService {
 
     private String findFirstValueByFieldId(List<FormBlockResponse> blocks, List<FieldAnswerRequest> answers,
             String fieldId) {
-        if (safeText(fieldId).isBlank()) {
-            return "";
-        }
         Map<String, FieldAnswerRequest> answerMap = toAnswerMap(answers);
         for (FormBlockResponse block : blocks) {
             if (Boolean.TRUE.equals(block.hidden())) {
