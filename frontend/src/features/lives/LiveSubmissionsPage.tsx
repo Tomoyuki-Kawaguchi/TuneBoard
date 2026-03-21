@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Copy, ExternalLink, Music2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -22,6 +23,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { apiClient } from '@/lib/api/client';
 import {
   formatLiveDate,
+  isSectionBlock,
+  isRepeatableGroupBlock,
   resolveRecordLabel,
   type LiveResponse,
   type PublicSettingSheetSubmissionDetailResponse,
@@ -33,6 +36,7 @@ import {
 interface ColumnDef {
   id: string;
   label: string;
+  path: string[];
   type: SettingSheetBlock['type'];
 }
 
@@ -98,22 +102,19 @@ export const LiveSubmissionsPage = () => {
     };
   }, [liveId]);
 
-  const labelMap = useMemo(() => buildFieldLabelMap(config), [config]);
   const recordLabel = useMemo(() => resolveRecordLabel(config), [config]);
-  const tableColumns = useMemo(() => collectColumns(config, 'tableVisible'), [config]);
+  const tableColumns = useMemo(() => collectColumns(config, 'publicVisible'), [config]);
+  const hasVisibleColumns = tableColumns.length > 0;
   const duplicateSongs = useMemo(() => collectDuplicateSongs(details), [details]);
 
   const filteredDetails = useMemo(() => {
-    if (!searchQuery.trim()) {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
       return details;
     }
-    const query = searchQuery.trim().toLowerCase();
     return details.filter((detail) => {
-      if (detail.recordLabel.toLowerCase().includes(query)) {
-        return true;
-      }
       return tableColumns.some((column) => {
-        const value = extractCellValue(detail.answers, column.id, column.type);
+        const value = extractCellValue(detail.answers, column.path, column.type);
         return value.toLowerCase().includes(query);
       });
     });
@@ -255,49 +256,46 @@ export const LiveSubmissionsPage = () => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <CardTitle className="text-base sm:text-lg">提出一覧</CardTitle>
-              {tableColumns.length === 0 && (
-                <p className="text-xs text-muted-foreground">フォーム編集画面で「管理者提出一覧でこの項目を列として表示する」を設定すると、ここに列が追加されます。</p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                {hasVisibleColumns
+                  ? '共有ページと同じ公開項目のみ表示。行をクリックすると詳細を確認できます。'
+                  : '共有ページで公開する項目を設定すると、その項目だけがここでも一覧表示されます。'}
+              </p>
             </div>
             <div className="relative w-full sm:max-w-sm">
               <Search className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
-              <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="pl-8" placeholder={`${recordLabel}で検索`} />
+              <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="pl-8" placeholder="公開項目で検索" disabled={!hasVisibleColumns} />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {filteredDetails.length === 0 ? (
+          {!hasVisibleColumns ? (
+            <p className="text-sm text-muted-foreground">共有リンクで公開する項目が設定されていません。管理画面で「共有に表示」をONにした項目だけがここに表示されます。</p>
+          ) : filteredDetails.length === 0 ? (
             <p className="text-sm text-muted-foreground">該当する提出はありません。</p>
           ) : (
             <div className="rounded-lg border">
-              <ScrollArea className="w-full">
+              <ScrollArea className="h-[70vh] w-full">
                 <Table className="min-w-max">
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 z-20 bg-background">
                     <TableRow>
-                      <TableHead className="sticky left-0 z-10 bg-background">{recordLabel}</TableHead>
                       {tableColumns.map((column) => (
-                        <TableHead key={column.id} className="w-[200px] whitespace-normal">{column.label}</TableHead>
+                        <TableHead key={column.id} className="w-[220px] whitespace-normal bg-background">{column.label}</TableHead>
                       ))}
-                      <TableHead>状態</TableHead>
-                      <TableHead>提出日時</TableHead>
-                      <TableHead className="text-right">操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredDetails.map((detail) => (
-                      <TableRow key={detail.id}>
-                        <TableCell className="sticky left-0 z-10 bg-background font-medium">{detail.recordLabel}</TableCell>
+                      <TableRow
+                        key={detail.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => { setSelectedSubmissionId(detail.id); setIsDetailDialogOpen(true); }}
+                      >
                         {tableColumns.map((column) => (
-                          <TableCell key={`${detail.id}-${column.id}`} className="w-[200px] whitespace-pre-line align-top text-sm">
-                            {extractCellValue(detail.answers, column.id, column.type)}
+                          <TableCell key={`${detail.id}-${column.id}`} className="w-[220px] whitespace-pre-line align-top text-sm">
+                            {extractCellValue(detail.answers, column.path, column.type)}
                           </TableCell>
                         ))}
-                        <TableCell><Badge variant="secondary">{detail.submissionStatus}</Badge></TableCell>
-                        <TableCell className="text-muted-foreground">{formatSubmittedAt(detail.submittedAt)}</TableCell>
-                        <TableCell className="flex gap-2 justify-end">
-                          <Button variant="outline" size="sm" onClick={() => { setSelectedSubmissionId(detail.id); setIsDetailDialogOpen(true); }}>詳細</Button>
-                          <Button variant="outline" size="sm" onClick={() => copyEditLink(detail.id)}><Copy className="size-4" /></Button>
-                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -309,28 +307,34 @@ export const LiveSubmissionsPage = () => {
       </Card>
 
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-3xl">
-          <DialogHeader>
+        <DialogContent className="max-h-[90dvh] w-[95vw] max-w-3xl overflow-hidden p-0 sm:w-full">
+          <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
             <DialogTitle>提出詳細</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh] pr-1">
+          <ScrollArea className="max-h-[70dvh] px-4 sm:px-6">
             {!selectedDetail ? (
-              <p className="text-sm text-muted-foreground">提出を選択してください。</p>
+              <p className="py-4 text-sm text-muted-foreground">提出を選択してください。</p>
             ) : (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">{recordLabel}</p>
-                  <p className="font-semibold">{selectedDetail.recordLabel}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">提出日時: {formatSubmittedAt(selectedDetail.submittedAt)}</p>
+              <div className="space-y-4 pb-4">
+                <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-3 sm:p-4">
+                  <SummaryItem label={recordLabel} value={selectedDetail.recordLabel} />
+                  <SummaryItem label="状態" value={<Badge variant="secondary">{selectedDetail.submissionStatus}</Badge>} />
+                  <SummaryItem label="提出日時" value={formatSubmittedAt(selectedDetail.submittedAt)} />
                 </div>
                 <Separator />
                 <div className="space-y-3">
-                  {renderAnswers(selectedDetail.answers, labelMap, selectedDetail.id)}
+                  {config ? renderSubmissionBlocks(config.blocks, selectedDetail.answers, selectedDetail.id) : null}
                 </div>
               </div>
             )}
           </ScrollArea>
-          <DialogFooter>
+          <DialogFooter className="flex-row justify-between gap-2 border-t px-4 py-3 sm:justify-between sm:px-6">
+            {selectedDetail ? (
+              <Button variant="outline" size="sm" onClick={() => copyEditLink(selectedDetail.id)}>
+                <Copy className="size-4" />
+                編集リンクをコピー
+              </Button>
+            ) : <span />}
             <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>閉じる</Button>
           </DialogFooter>
         </DialogContent>
@@ -345,57 +349,57 @@ function collectColumns(config: SettingSheetConfigResponse | null, visibilityKey
   }
   const columns: ColumnDef[] = [];
 
-  const visit = (blocks: SettingSheetConfigResponse['blocks']) => {
+  const visit = (blocks: SettingSheetConfigResponse['blocks'], labelTrail: string[], answerPath: string[]) => {
     for (const block of blocks) {
-      if (block.type === 'SECTION') {
-        visit(block.fields);
-        continue;
+      const nextLabelTrail = isSectionBlock(block.type) ? [...labelTrail, block.label] : labelTrail;
+      const nextAnswerPath = isSectionBlock(block.type) ? answerPath : [...answerPath, block.id];
+
+      if (block[visibilityKey] && !isSectionBlock(block.type)) {
+        columns.push({
+          id: block.id,
+          label: [...labelTrail, block.label].join(' / '),
+          path: [...answerPath, block.id],
+          type: block.type,
+        });
       }
-      if (block[visibilityKey]) {
-        columns.push({ id: block.id, label: block.label, type: block.type });
+
+      if (block.fields.length > 0) {
+        visit(block.fields, nextLabelTrail, nextAnswerPath);
       }
     }
   };
 
-  visit(config.blocks);
+  visit(config.blocks, [], []);
   return columns;
 }
 
 function extractCellValue(
   answers: SettingSheetSubmissionAnswerResponse[],
-  fieldId: string,
+  path: string[],
   blockType: SettingSheetBlock['type'],
 ): string {
-  const answer = answers.find((a) => a.fieldId === fieldId);
+  if (path.length === 0) {
+    return '未入力';
+  }
+
+  const [currentId, ...restPath] = path;
+  const answer = answers.find((entry) => entry.fieldId === currentId);
   if (!answer) {
     return '未入力';
   }
-  if (blockType === 'REPEATABLE_GROUP') {
-    if (answer.items.length === 0) {
-      return '未入力';
+
+  if (restPath.length === 0) {
+    if (blockType === 'REPEATABLE_GROUP') {
+      return answer.items.length === 0 ? '未入力' : `${answer.items.length}件`;
     }
-    return `${answer.items.length}件`;
-  }
-  return answer.values.length > 0 ? answer.values.join(' / ') : '未入力';
-}
-
-function buildFieldLabelMap(config: SettingSheetConfigResponse | null) {
-  const map = new Map<string, string>();
-
-  const visit = (blocks: SettingSheetConfigResponse['blocks']) => {
-    for (const block of blocks) {
-      map.set(block.id, block.label);
-      if (block.fields.length > 0) {
-        visit(block.fields);
-      }
-    }
-  };
-
-  if (config) {
-    visit(config.blocks);
+    return answer.values.length > 0 ? answer.values.join(' / ') : '未入力';
   }
 
-  return map;
+  const nestedValues = answer.items
+    .map((item) => extractCellValue(item.answers, restPath, blockType))
+    .filter((value) => value !== '未入力');
+
+  return nestedValues.length === 0 ? '未入力' : nestedValues.join('\n');
 }
 
 function collectDuplicateSongs(submissions: PublicSettingSheetSubmissionDetailResponse[]): DuplicateSongCandidate[] {
@@ -480,36 +484,115 @@ function formatSubmittedAt(value: string) {
   return new Intl.DateTimeFormat('ja-JP', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
-function renderAnswers(
+function formatAnswerValue(values: string[], blockType: SettingSheetBlock['type']) {
+  if (values.length === 0) {
+    return '未入力';
+  }
+  if (blockType === 'BOOLEAN') {
+    return values[0] === 'true' ? 'はい' : values[0] === 'false' ? 'いいえ' : values.join(' / ');
+  }
+  return values.join(' / ');
+}
+
+function resolveItemTitle(
+  block: SettingSheetBlock,
+  itemAnswers: SettingSheetSubmissionAnswerResponse[],
+  itemIndex: number,
+) {
+  if (block.titleSourceFieldId) {
+    const source = itemAnswers.find((a) => a.fieldId === block.titleSourceFieldId);
+    if (source && source.values.length > 0 && source.values[0].trim()) {
+      return source.values[0].trim();
+    }
+  }
+  return `${block.entryTitle || block.label} ${itemIndex + 1}`;
+}
+
+function renderSubmissionBlocks(
+  blocks: SettingSheetBlock[],
   answers: PublicSettingSheetSubmissionDetailResponse['answers'],
-  labelMap: Map<string, string>,
   path: string,
 ) {
-  return answers.map((answer, index) => {
-    const key = `${path}-${answer.fieldId}-${index}`;
-    const label = labelMap.get(answer.fieldId) ?? answer.fieldId;
+  const answerMap = new Map(answers.map((a) => [a.fieldId, a]));
 
-    if (answer.items.length > 0) {
+  return blocks.map((block, index) => {
+    const key = `${path}-${block.id}-${index}`;
+    const answer = answerMap.get(block.id);
+
+    if (isSectionBlock(block.type)) {
       return (
-        <div key={key} className="space-y-2 rounded-md border p-3">
-          <p className="font-medium">{label}</p>
-          <div className="space-y-2">
-            {answer.items.map((item, itemIndex) => (
-              <div key={`${key}-item-${itemIndex}`} className="rounded-md bg-muted/40 p-3">
-                <p className="mb-2 text-xs text-muted-foreground">{itemIndex + 1}件目</p>
-                <div className="space-y-2">{renderAnswers(item.answers, labelMap, `${key}-item-${itemIndex}`)}</div>
+        <Accordion key={key} type="single" collapsible defaultValue={`${key}-open`}>
+          <AccordionItem value={`${key}-open`} className="border rounded-lg">
+            <AccordionTrigger className="px-4 py-3 hover:no-underline">
+              <div className="text-left">
+                <p className="text-sm font-semibold sm:text-base">{block.label}</p>
+                {block.description ? <p className="mt-0.5 text-xs text-muted-foreground">{block.description}</p> : null}
               </div>
-            ))}
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              {block.fields.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2">{renderSubmissionBlocks(block.fields, answers, key)}</div>
+              ) : null}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      );
+    }
+
+    if (isRepeatableGroupBlock(block.type)) {
+      const items = answer?.items ?? [];
+      return (
+        <div key={key} className="space-y-2 sm:col-span-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold">{block.label}</p>
+            <Badge variant="outline">{items.length}件</Badge>
           </div>
+          {items.length === 0 ? (
+            <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">未入力</p>
+          ) : block.collapsible ? (
+            <Accordion type="single" collapsible className="space-y-2">
+              {items.map((item, itemIndex) => {
+                const itemTitle = resolveItemTitle(block, item.answers, itemIndex);
+                return (
+                  <AccordionItem key={`${key}-item-${itemIndex}`} value={`${key}-item-${itemIndex}`} className="rounded-lg border">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <span className="text-sm font-medium">{itemTitle}</span>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="grid gap-3 sm:grid-cols-2">{renderSubmissionBlocks(block.fields, item.answers, `${key}-item-${itemIndex}`)}</div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          ) : (
+            <div className="space-y-3">
+              {items.map((item, itemIndex) => (
+                <div key={`${key}-item-${itemIndex}`} className="rounded-lg border bg-muted/30 p-3 sm:p-4">
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">{resolveItemTitle(block, item.answers, itemIndex)}</p>
+                  <div className="grid gap-3 sm:grid-cols-2">{renderSubmissionBlocks(block.fields, item.answers, `${key}-item-${itemIndex}`)}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       );
     }
 
     return (
-      <div key={key} className="rounded-md border p-3">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="mt-1 wrap-break-word font-medium">{answer.values.length > 0 ? answer.values.join(' / ') : '未入力'}</p>
+      <div key={key} className="space-y-1 rounded-lg border p-3">
+        <p className="text-xs font-medium text-muted-foreground">{block.label}</p>
+        <p className="whitespace-pre-wrap wrap-break-word text-sm font-medium leading-6">{formatAnswerValue(answer?.values ?? [], block.type)}</p>
       </div>
     );
   });
+}
+
+function SummaryItem({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <div className="text-sm font-medium">{value}</div>
+    </div>
+  );
 }
